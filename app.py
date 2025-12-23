@@ -192,12 +192,12 @@ def handle_inline_get(call):
 # ================== MENU CHÍNH (REPLY KEYBOARD) ==================
 
 @bot.message_handler(func=lambda m: any(service['emoji'] in m.text and service['name'] in m.text for service in FREE_ACCOUNTS.values()))
-def send_free_account(msg):
-    user_id = msg.from_user.id
+def send_free_account(msg):  # Tham số là msg
+    user_id = msg.from_user.id  # Dùng msg
     selected_key = None
     
     for key, service in FREE_ACCOUNTS.items():
-        if service['emoji'] in m.text and service['name'] in m.text:
+        if service['emoji'] in msg.text and service['name'] in msg.text:  # ← Sửa m.text → msg.text
             selected_key = key
             break
     
@@ -208,7 +208,7 @@ def send_free_account(msg):
     
     if not can_user_take_today(user_id, selected_key):
         bot.send_message(
-            msg.chat.id,
+            msg.chat.id,  # ← msg.chat.id
             f"⛔ <b>Bạn đã lấy đủ 2 lần {service['name']} hôm nay rồi!</b>\n\n"
             f"Quay lại ngày mai để nhận thêm nhé ❤️",
             parse_mode="HTML",
@@ -218,7 +218,7 @@ def send_free_account(msg):
     
     account = get_one_random_account(selected_key)
     if not account:
-        bot.send_message(msg.chat.id, f"❌ Hiện chưa có tài khoản cho {service['name']}.", reply_markup=main_menu())
+        bot.send_message(msg.chat.id, f"❌ Hiện chưa có tài khoản cho {service['name']}.", reply_markup=main_menu())  # ← msg.chat.id
         return
     
     current_count = mark_user_taken(user_id, selected_key)
@@ -232,7 +232,7 @@ def send_free_account(msg):
         f"🔄 Ngày mai reset lại 2 lần mới nhé!"
     )
     
-    bot.send_message(msg.chat.id, text, parse_mode="HTML", reply_markup=main_menu())
+    bot.send_message(msg.chat.id, text, parse_mode="HTML", reply_markup=main_menu())  # ← msg.chat.id
 
 # ================== CHẠY BOT ==================
 
