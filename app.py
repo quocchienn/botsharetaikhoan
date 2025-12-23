@@ -5,18 +5,17 @@ from datetime import datetime, date
 import random
 import threading
 import time
-import os  # Thêm os để lấy env variables trên Render
+import os
+from flask import Flask  # Thêm Flask để bind port cho Render
 
-# ================== CẤU HÌNH TỪ ENVIRONMENT VARIABLES (AN TOÀN CHO RENDER) ==================
+# ================== CẤU HÌNH ==================
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Lấy từ Render Environment
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URI = os.getenv("MONGO_URI")
-DB_NAME = os.getenv("DB_NAME", "free_share_bot")  # Có thể thay đổi tên DB nếu cần
+DB_NAME = os.getenv("DB_NAME", "free_share_bot")
 
 if not BOT_TOKEN or not MONGO_URI:
-    raise ValueError("Vui lòng thiết lập BOT_TOKEN và MONGO_URI trong Environment Variables trên Render!")
-
-ADMIN_ID = 5589888565  # Có thể chuyển thành env nếu cần: int(os.getenv("ADMIN_ID", "0"))
+    raise ValueError("Vui lòng thiết lập BOT_TOKEN và MONGO_URI trong Environment Variables!")
 
 # ================== DANH SÁCH TÀI KHOẢN FREE ==================
 
@@ -51,18 +50,28 @@ FREE_ACCOUNTS = {
         ]
     },
 }
-
-# ================== KHỞI TẠO ==================
+# ================== KHỞI TẠO BOT & DB ==================
 
 bot = telebot.TeleBot(BOT_TOKEN)
 mongo = MongoClient(MONGO_URI)
 db = mongo[DB_NAME]
 users_collection = db.users
 
-# ================== HÀM HỖ TRỢ ==================
+# ================== FLASK SERVER ĐỂ BIND PORT CHO RENDER ==================
+
+app = Flask(__name__)
+
+@app.route('/')
+def health_check():
+    return "🤖 Bot Share Tài Khoản Free đang chạy khỏe mạnh! 🚀", 200
+
+def run_flask():
+    port = int(os.environ.get("PORT", 10000))  # Render tự gán PORT
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+
+# ================== HÀM HỖ TRỢ BOT ==================
 
 def can_user_take_today(user_id, service_key):
-    """Kiểm tra user còn lượt lấy hôm nay không (tối đa 2 lần/dịch vụ)"""
     today = date.today().isoformat()
     record = users_collection.find_one({
         "user_id": user_id,
@@ -74,7 +83,6 @@ def can_user_take_today(user_id, service_key):
     return record.get("count", 0) < 2
 
 def mark_user_taken(user_id, service_key):
-    """Tăng số lần lấy hôm nay và trả về số lần hiện tại"""
     today = date.today().isoformat()
     result = users_collection.find_one_and_update(
         {"user_id": user_id, "service": service_key, "date": today},
@@ -103,7 +111,7 @@ def delete_message_later(chat_id, message_id, delay=15):
         try:
             bot.delete_message(chat_id, message_id)
         except:
-            pass  # Bỏ qua lỗi (quyền, tin nhắn đã xóa...)
+            pass
     threading.Thread(target=delete, daemon=True).start()
 
 def main_menu():
@@ -130,7 +138,7 @@ def start(msg):
         reply_markup=main_menu()
     )
 
-# ================== LỆNH /taikhoan ==================
+# ================== /taikhoan ==================
 
 @bot.message_handler(commands=["taikhoan"])
 def taikhoan_command(msg):
@@ -146,7 +154,7 @@ def taikhoan_command(msg):
     if msg.chat.type in ["group", "supergroup"]:
         delete_message_later(msg.chat.id, menu_msg.message_id, delay=15)
 
-# ================== XỬ LÝ INLINE BUTTON ==================
+# ================== INLINE BUTTON ==================
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("get_"))
 def handle_inline_get(call):
@@ -185,19 +193,19 @@ def handle_inline_get(call):
     
     try:
         bot.send_message(user_id, text, parse_mode="HTML")
-        bot.answer_callback_query(call.id, f"✅ Đã gửi tài khoản (lần {current_count}/2)!", show_alert=False)
+        bot.answer_callback_query(call.id, f"✅ Đã gửi (lần {current_count}/2)!", show_alert=False)
     except:
         bot.answer_callback_query(call.id, "❌ Vui lòng /start bot riêng để nhận!", show_alert=True)
 
-# ================== MENU CHÍNH (REPLY KEYBOARD) ==================
+# ================== MENU CHÍNH ==================
 
 @bot.message_handler(func=lambda m: any(service['emoji'] in m.text and service['name'] in m.text for service in FREE_ACCOUNTS.values()))
-def send_free_account(msg):  # Tham số là msg
-    user_id = msg.from_user.id  # Dùng msg
+def send_free_account(msg):
+    user_id = msg.from_user.id
     selected_key = None
     
     for key, service in FREE_ACCOUNTS.items():
-        if service['emoji'] in msg.text and service['name'] in msg.text:  # ← Sửa m.text → msg.text
+        if service['emoji'] in msg.text and service['name'] in msg.text:
             selected_key = key
             break
     
@@ -208,7 +216,7 @@ def send_free_account(msg):  # Tham số là msg
     
     if not can_user_take_today(user_id, selected_key):
         bot.send_message(
-            msg.chat.id,  # ← msg.chat.id
+            msg.chat.id,
             f"⛔ <b>Bạn đã lấy đủ 2 lần {service['name']} hôm nay rồi!</b>\n\n"
             f"Quay lại ngày mai để nhận thêm nhé ❤️",
             parse_mode="HTML",
@@ -218,7 +226,7 @@ def send_free_account(msg):  # Tham số là msg
     
     account = get_one_random_account(selected_key)
     if not account:
-        bot.send_message(msg.chat.id, f"❌ Hiện chưa có tài khoản cho {service['name']}.", reply_markup=main_menu())  # ← msg.chat.id
+        bot.send_message(msg.chat.id, f"❌ Hiện chưa có tài khoản cho {service['name']}.", reply_markup=main_menu())
         return
     
     current_count = mark_user_taken(user_id, selected_key)
@@ -232,15 +240,20 @@ def send_free_account(msg):  # Tham số là msg
         f"🔄 Ngày mai reset lại 2 lần mới nhé!"
     )
     
-    bot.send_message(msg.chat.id, text, parse_mode="HTML", reply_markup=main_menu())  # ← msg.chat.id
+    bot.send_message(msg.chat.id, text, parse_mode="HTML", reply_markup=main_menu())
 
-# ================== CHẠY BOT ==================
+# ================== CHẠY BOT + FLASK SONG SONG ==================
 
 if __name__ == "__main__":
-    print("🤖 Bot Share Tài Khoản Free đang khởi động trên Render...")
-    print("Tối đa 2 lần/ngày/dịch vụ | Menu /taikhoan tự xóa sau 15s")
+    print("🤖 Bot Share Tài Khoản Free đang khởi động trên Render (Web Service với port)...")
+    
+    # Chạy Flask server trong thread riêng để bind port
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    
+    # Chạy bot polling chính
     try:
         bot.infinity_polling(none_stop=True)
     except Exception as e:
-        print(f"Lỗi nghiêm trọng: {e}")
-        time.sleep(10)  # Thử lại sau 10s nếu lỗi
+        print(f"Lỗi bot: {e}")
+        time.sleep(10)
