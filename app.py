@@ -35,7 +35,6 @@ FREE_ACCOUNTS = {
         "emoji": "🤖",
         "keywords": ["chatgpt", "gpt", "chat gpt", "ai"],
         "accounts": [
-               "accounts": [
             "bảo trì",
         ]
     },
