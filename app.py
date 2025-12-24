@@ -24,8 +24,9 @@ FREE_ACCOUNTS = {
         "name": "CapCut Pro Free",
         "emoji": "🎬",
         "accounts": [
-            "bảo trì ",
-            # Thêm nhiều càng tốt → bot sẽ random 1 cái
+            "Email: hocey76005@m3player.com | Pass: Chien2007",
+            "Email: xadas61730@m3player.com | Pass: Chien2k5",
+            "Email: fajic10847@m3player.com | Pass: Freecamdoihoi",
         ]
     },
     "chatgpt": {
