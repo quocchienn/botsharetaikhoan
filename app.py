@@ -17,12 +17,13 @@ DB_NAME = os.getenv("DB_NAME", "free_share_bot")
 if not BOT_TOKEN or not MONGO_URI:
     raise ValueError("Thiết lập BOT_TOKEN và MONGO_URI trong Environment Variables!")
 
-# ================== DANH SÁCH TÀI KHOẢN FREE VÀ TỪ KHÓA ==================
+# ================== DANH SÁCH TÀI KHOẢN FREE VỚI KEYWORDS ==================
 
 FREE_ACCOUNTS = {
     "capcut": {
         "name": "CapCut Pro Free",
         "emoji": "🎬",
+        "keywords": ["capcut", "cap", "cut", "cap cut"],
         "accounts": [
             "Email: hocey76005@m3player.com | Pass: Chien2007",
             "Email: xadas61730@m3player.com | Pass: Chien2k5",
@@ -32,20 +33,24 @@ FREE_ACCOUNTS = {
     "chatgpt": {
         "name": "ChatGPT Shared",
         "emoji": "🤖",
+        "keywords": ["chatgpt", "gpt", "chat gpt", "ai"],
         "accounts": [
+               "accounts": [
             "bảo trì",
         ]
     },
     "canva": {
         "name": "Canva Pro Teams Free",
         "emoji": "🎨",
+        "keywords": ["canva", "design", "thietke", "can va"],
         "accounts": [
             "Invite link: https://www.canva.com/brand/join?token=F8CsC2hexK3B8JRVWWOzeg&referrer=team-invite",
         ]
     },
     "netflix": {
-        "name": "Netflix",
+        "name": "Netflix Shared",
         "emoji": "📺",
+        "keywords": ["netflix", "nf", "phim", "net flix"],
         "accounts": [
             "Email: firstmail640@gmail10p.com | Pass: GHAX12170",
         ]
@@ -58,7 +63,7 @@ mongo = MongoClient(MONGO_URI)
 db = mongo[DB_NAME]
 users_collection = db.users
 
-# ================== FLASK ĐỂ BIND PORT ==================
+# ================== FLASK SERVER ==================
 
 app = Flask(__name__)
 
@@ -137,7 +142,7 @@ def start(msg):
         reply_markup=inline_service_menu()
     )
 
-# ================== /taikhoan (TRONG NHÓM) ==================
+# ================== /taikhoan ==================
 
 @bot.message_handler(commands=["taikhoan"])
 def taikhoan_command(msg):
@@ -157,7 +162,7 @@ def taikhoan_command(msg):
     if msg.chat.type in ["group", "supergroup"]:
         delete_message_later(msg.chat.id, menu_msg.message_id, delay=15)
 
-# ================== XỬ LÝ TỪ KHÓA NGẮN (capcut, chatgpt, v.v.) ==================
+# ================== XỬ LÝ TỪ KHÓA NGẮN ==================
 
 @bot.message_handler(func=lambda m: True)
 def handle_keyword(msg):
@@ -165,17 +170,17 @@ def handle_keyword(msg):
     selected_key = None
     
     for key, service in FREE_ACCOUNTS.items():
-        if any(keyword in text for keyword in service["keywords"]):
+        if any(kw in text for kw in service["keywords"]):
             selected_key = key
             break
     
     if not selected_key:
-        return  # Không phải từ khóa → bỏ qua
+        return
     
     menu_text = (
         f"🔥 <b>Bạn muốn nhận {FREE_ACCOUNTS[selected_key]['name']}?</b>\n"
         f"(Mỗi ngày tối đa 2 lần)\n\n"
-        f"👇 Chọn dịch vụ bên dưới để nhận tài khoản ngay!"
+        f"👇 Chọn dịch vụ bên dưới để nhận ngay!"
     )
     
     menu_msg = bot.send_message(
@@ -185,11 +190,10 @@ def handle_keyword(msg):
         reply_markup=inline_service_menu()
     )
     
-    # Chỉ xóa nếu đang ở nhóm
     if msg.chat.type in ["group", "supergroup"]:
         delete_message_later(msg.chat.id, menu_msg.message_id, delay=15)
 
-# ================== XỬ LÝ INLINE BUTTON ==================
+# ================== XỬ LÝ INLINE ==================
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("get_"))
 def handle_inline_get(call):
