@@ -6,7 +6,7 @@ import random
 import threading
 import time
 import os
-from flask import Flask  # Thêm Flask để bind port cho Render
+from flask import Flask
 
 # ================== CẤU HÌNH ==================
 
@@ -15,7 +15,7 @@ MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = os.getenv("DB_NAME", "free_share_bot")
 
 if not BOT_TOKEN or not MONGO_URI:
-    raise ValueError("Vui lòng thiết lập BOT_TOKEN và MONGO_URI trong Environment Variables!")
+    raise ValueError("Thiết lập BOT_TOKEN và MONGO_URI trong Environment Variables!")
 
 # ================== DANH SÁCH TÀI KHOẢN FREE ==================
 
@@ -51,14 +51,14 @@ FREE_ACCOUNTS = {
         ]
     },
 }
-# ================== KHỞI TẠO BOT & DB ==================
+# ================== KHỞI TẠO ==================
 
 bot = telebot.TeleBot(BOT_TOKEN)
 mongo = MongoClient(MONGO_URI)
 db = mongo[DB_NAME]
 users_collection = db.users
 
-# ================== FLASK SERVER ĐỂ BIND PORT CHO RENDER ==================
+# ================== FLASK ĐỂ BIND PORT ==================
 
 app = Flask(__name__)
 
@@ -67,10 +67,10 @@ def health_check():
     return "🤖 Bot Share Tài Khoản Free đang chạy khỏe mạnh! 🚀", 200
 
 def run_flask():
-    port = int(os.environ.get("PORT", 10000))  # Render tự gán PORT
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
-# ================== HÀM HỖ TRỢ BOT ==================
+# ================== HÀM HỖ TRỢ ==================
 
 def can_user_take_today(user_id, service_key):
     today = date.today().isoformat()
@@ -98,12 +98,19 @@ def get_one_random_account(service_key):
     return random.choice(accounts) if accounts else None
 
 def inline_service_menu():
-    kb = types.InlineKeyboardMarkup(row_width=2)
+    kb = types.InlineKeyboardMarkup(row_width=1)  # row_width=1 để button dọc như ảnh bạn muốn
     for key, service in FREE_ACCOUNTS.items():
         kb.add(types.InlineKeyboardButton(
             text=f"{service['emoji']} {service['name']}",
             callback_data=f"get_{key}"
         ))
+    return kb
+
+def reply_keyboard_menu():
+    kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    for key in FREE_ACCOUNTS:
+        service = FREE_ACCOUNTS[key]
+        kb.add(f"{service['emoji']} {service['name']}")
     return kb
 
 def delete_message_later(chat_id, message_id, delay=15):
@@ -115,50 +122,53 @@ def delete_message_later(chat_id, message_id, delay=15):
             pass
     threading.Thread(target=delete, daemon=True).start()
 
-def main_menu():
-    kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    for key in FREE_ACCOUNTS:
-        service = FREE_ACCOUNTS[key]
-        kb.add(f"{service['emoji']} {service['name']}")
-    return kb
-
-# ================== /start ==================
+# ================== /start (CHỈ HIỆN REPLY KEYBOARD TRONG CHAT RIÊNG) ==================
 
 @bot.message_handler(commands=["start"])
 def start(msg):
-    bot.send_message(
-        msg.chat.id,
+    welcome_text = (
         "🎉 <b>CHÀO MỪNG BẠN ĐẾN SHARE TÀI KHOẢN FREE</b>\n\n"
         "🔥 Chia sẻ tài khoản Pro/Teams miễn phí!\n\n"
         "⚠️ <i>Quy định:</i>\n"
         "• Mỗi ngày được lấy <b>tối đa 2 tài khoản</b> cho mỗi dịch vụ\n"
         "• Mỗi lần nhận <b>1 tài khoản ngẫu nhiên</b>\n"
         "❤️ Dùng hợp lý, không đổi pass nhé!\n\n"
-        "👇 Chọn dịch vụ hoặc dùng /taikhoan trong nhóm!",
+        "👇 Chọn dịch vụ bên dưới để nhận ngay!"
+    )
+    
+    bot.send_message(
+        msg.chat.id,
+        welcome_text,
         parse_mode="HTML",
-        reply_markup=main_menu()
+        reply_markup=reply_keyboard_menu()  # Chỉ hiện reply keyboard trong chat riêng
     )
 
-# ================== /taikhoan ==================
+# ================== /taikhoan (TRONG NHÓM: HIỆN INLINE + TỰ XÓA SAU 15S) ==================
 
 @bot.message_handler(commands=["taikhoan"])
 def taikhoan_command(msg):
-    menu_msg = bot.send_message(
-        msg.chat.id,
+    menu_text = (
         "📋 <b>Chọn dịch vụ để nhận 1 tài khoản free</b>\n"
         "(Mỗi ngày tối đa 2 lần mỗi dịch vụ)\n\n"
-        "⏳ <i>Menu này sẽ tự xóa sau 15 giây trong nhóm</i>",
-        parse_mode="HTML",
-        reply_markup=inline_service_menu()
+        "⏳ <i>Menu này sẽ tự xóa sau 15 giây</i>"
     )
     
+    menu_msg = bot.send_message(
+        msg.chat.id,
+        menu_text,
+        parse_mode="HTML",
+        reply_markup=inline_service_menu()  # Inline button dọc đẹp
+    )
+    
+    # Chỉ xóa nếu đang ở nhóm
     if msg.chat.type in ["group", "supergroup"]:
         delete_message_later(msg.chat.id, menu_msg.message_id, delay=15)
 
-# ================== INLINE BUTTON ==================
+# ================== XỬ LÝ INLINE BUTTON (TỪ /taikhoan TRONG NHÓM) ==================
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("get_"))
 def handle_inline_get(call):
+    # (giữ nguyên như cũ)
     user_id = call.from_user.id
     service_key = call.data.split("_")[1]
     
@@ -198,10 +208,11 @@ def handle_inline_get(call):
     except:
         bot.answer_callback_query(call.id, "❌ Vui lòng /start bot riêng để nhận!", show_alert=True)
 
-# ================== MENU CHÍNH ==================
+# ================== XỬ LÝ REPLY KEYBOARD (TRONG CHAT RIÊNG) ==================
 
 @bot.message_handler(func=lambda m: any(service['emoji'] in m.text and service['name'] in m.text for service in FREE_ACCOUNTS.values()))
 def send_free_account(msg):
+    # (giữ nguyên như cũ, chỉ dùng trong chat riêng)
     user_id = msg.from_user.id
     selected_key = None
     
@@ -221,13 +232,13 @@ def send_free_account(msg):
             f"⛔ <b>Bạn đã lấy đủ 2 lần {service['name']} hôm nay rồi!</b>\n\n"
             f"Quay lại ngày mai để nhận thêm nhé ❤️",
             parse_mode="HTML",
-            reply_markup=main_menu()
+            reply_markup=reply_keyboard_menu()
         )
         return
     
     account = get_one_random_account(selected_key)
     if not account:
-        bot.send_message(msg.chat.id, f"❌ Hiện chưa có tài khoản cho {service['name']}.", reply_markup=main_menu())
+        bot.send_message(msg.chat.id, f"❌ Hiện chưa có tài khoản cho {service['name']}.", reply_markup=reply_keyboard_menu())
         return
     
     current_count = mark_user_taken(user_id, selected_key)
@@ -241,18 +252,17 @@ def send_free_account(msg):
         f"🔄 Ngày mai reset lại 2 lần mới nhé!"
     )
     
-    bot.send_message(msg.chat.id, text, parse_mode="HTML", reply_markup=main_menu())
+    bot.send_message(msg.chat.id, text, parse_mode="HTML", reply_markup=reply_keyboard_menu())
 
-# ================== CHẠY BOT + FLASK SONG SONG ==================
+# ================== CHẠY BOT + FLASK ==================
 
 if __name__ == "__main__":
-    print("🤖 Bot Share Tài Khoản Free đang khởi động trên Render (Web Service với port)...")
+    print("🤖 Bot Share Tài Khoản Free đang khởi động...")
+    print("Nhóm: /taikhoan → inline menu tự xóa 15s | Riêng: reply keyboard")
     
-    # Chạy Flask server trong thread riêng để bind port
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
     
-    # Chạy bot polling chính
     try:
         bot.infinity_polling(none_stop=True)
     except Exception as e:
