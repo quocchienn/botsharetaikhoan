@@ -44,10 +44,10 @@ FREE_ACCOUNTS = {
         ]
     },
     "netflix": {
-        "name": "Netflix Shared",
+        "name": "Netflix",
         "emoji": "📺",
         "accounts": [
-            "bảo trì",
+            "Email: firstmail640@gmail10p.com | Pass: GHAX12170",
         ]
     },
 }
