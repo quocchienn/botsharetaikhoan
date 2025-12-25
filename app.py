@@ -61,12 +61,18 @@ FREE_ACCOUNTS = {
         ]
     },
     "chatgpt": {
-        "name": "ChatGPT Shared",
+        "name": "ChatGPT PLus",
         "emoji": "🤖",
         "keywords": ["chatgpt", "gpt", "chat gpt", "ai"],
         "accounts": [
-            "bảo trì",
-        ]
+         "accounts": [
+    "Email: rorekay973@gamintor.com | Pass: quocchienv2123",
+    "Email: fafovid463@gamintor.com | Pass: quocchien273162",
+    "Email: cebaxa7188@m3player.com | Pass: quocchien741210",
+    "Email: jahiw31399@m3player.com | Pass: quocchien170121",
+    "Email: bemohi4340@gamintor.com | Pass: quocchien723140",
+    # Bạn có thể thêm nhiều hơn nếu có
+],
     },
     "canva": {
         "name": "Canva Pro Teams Free",
