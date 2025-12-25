@@ -59,20 +59,18 @@ FREE_ACCOUNTS = {
     "Email: chelsey.nikomjf9i4nj@hunght1890.com | Pass: a123456",
     "Email: annette11mjf9k9am@hunght1890.com | Pass: a123456",
         ]
-    },
+},
     "chatgpt": {
-        "name": "ChatGPT PLus",
+        "name": "ChatGPT",
         "emoji": "🤖",
         "keywords": ["chatgpt", "gpt", "chat gpt", "ai"],
         "accounts": [
-         "accounts": [
-    "Email: rorekay973@gamintor.com | Pass: quocchienv2123",
-    "Email: fafovid463@gamintor.com | Pass: quocchien273162",
-    "Email: cebaxa7188@m3player.com | Pass: quocchien741210",
-    "Email: jahiw31399@m3player.com | Pass: quocchien170121",
-    "Email: bemohi4340@gamintor.com | Pass: quocchien723140",
-    # Bạn có thể thêm nhiều hơn nếu có
-]
+            "Email: rorekay973@gamintor.com | Pass: quocchienv2123",
+            "Email: fafovid463@gamintor.com | Pass: quocchien273162",
+            "Email: cebaxa7188@m3player.com | Pass: quocchien741210",
+            "Email: jahiw31399@m3player.com | Pass: quocchien170121",
+            "Email: bemohi4340@gamintor.com | Pass: quocchien723140",
+        ]
     },
     "canva": {
         "name": "Canva Pro Teams Free",
