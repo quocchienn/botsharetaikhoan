@@ -274,7 +274,7 @@ def handle_inline_get(call):
     except:
         bot.answer_callback_query(call.id, "❌ Vui lòng chat riêng với bot để nhận!", show_alert=True)
 
-# ================== CÁC LỆNH ADMIN MỚI: XÓA LƯỢT LẤY ==================
+# ================== CÁC LỆNH ADMIN MỚI: XÓA LƯỢT LẤY ===================
 
 @bot.message_handler(commands=["reset"])
 def reset_user(msg):
@@ -292,7 +292,7 @@ def reset_user(msg):
         user_id = int(parts[2])
         
         if service_key not in FREE_ACCOUNTS:
-            bot.reply_to(msg, f"❌ Dịch vụ không tồn tại! Các dịch vụ hợp lệ: {', '.join(FREE_ACCOUNTS.keys())}")
+            bot.reply_to(msg, f"❌ Dịch vụ không hợp lệ! Có: capcut, chatgpt, canva, netflix")
             return
         
         today = date.today().isoformat()
@@ -303,9 +303,9 @@ def reset_user(msg):
         })
         
         if result.deleted_count > 0:
-            bot.reply_to(msg, f"✅ Đã reset lượt lấy {FREE_ACCOUNTS[service_key]['name']} hôm nay cho user ID {user_id}")
+            bot.reply_to(msg, f"✅ Đã reset lượt lấy {FREE_ACCOUNTS[service_key]['name']} hôm nay cho user {user_id}")
         else:
-            bot.reply_to(msg, f"ℹ️ Không tìm thấy lượt lấy nào của user {user_id} với {FREE_ACCOUNTS[service_key]['name']} hôm nay")
+            bot.reply_to(msg, f"ℹ️ User {user_id} chưa lấy {FREE_ACCOUNTS[service_key]['name']} hôm nay")
     
     except ValueError:
         bot.reply_to(msg, "❌ User ID phải là số!")
@@ -327,7 +327,7 @@ def reset_all_service(msg):
         service_key = parts[1].lower()
         
         if service_key not in FREE_ACCOUNTS:
-            bot.reply_to(msg, f"❌ Dịch vụ không tồn tại! Các dịch vụ hợp lệ: {', '.join(FREE_ACCOUNTS.keys())}")
+            bot.reply_to(msg, f"❌ Dịch vụ không hợp lệ! Có: capcut, chatgpt, canva, netflix")
             return
         
         today = date.today().isoformat()
@@ -336,7 +336,7 @@ def reset_all_service(msg):
             "date": today
         })
         
-        bot.reply_to(msg, f"✅ Đã reset lượt lấy {FREE_ACCOUNTS[service_key]['name']} hôm nay cho <b>{result.deleted_count}</b> người dùng!", parse_mode="HTML")
+        bot.reply_to(msg, f"✅ Đã reset {FREE_ACCOUNTS[service_key]['name']} cho <b>{result.deleted_count}</b> người dùng hôm nay!", parse_mode="HTML")
     
     except Exception as e:
         bot.reply_to(msg, f"❌ Lỗi: {e}")
@@ -351,7 +351,7 @@ def reset_all_today(msg):
         today = date.today().isoformat()
         result = users_collection.delete_many({"date": today})
         
-        bot.reply_to(msg, f"🔥 Đã reset <b>HOÀN TOÀN</b> lượt lấy hôm nay cho tất cả dịch vụ!\nXóa {result.deleted_count} bản ghi.", parse_mode="HTML")
+        bot.reply_to(msg, f"🔥 Đã reset hoàn toàn lượt lấy hôm nay!\nXóa <b>{result.deleted_count}</b> bản ghi của tất cả dịch vụ.", parse_mode="HTML")
     
     except Exception as e:
         bot.reply_to(msg, f"❌ Lỗi: {e}")
