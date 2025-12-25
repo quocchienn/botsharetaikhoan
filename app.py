@@ -72,7 +72,7 @@ FREE_ACCOUNTS = {
     "Email: jahiw31399@m3player.com | Pass: quocchien170121",
     "Email: bemohi4340@gamintor.com | Pass: quocchien723140",
     # Bạn có thể thêm nhiều hơn nếu có
-],
+]
     },
     "canva": {
         "name": "Canva Pro Teams Free",
