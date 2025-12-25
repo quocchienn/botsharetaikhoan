@@ -176,7 +176,7 @@ def start(msg):
         "🎉 <b>CHÀO MỪNG BẠN ĐẾN SHARE TÀI KHOẢN FREE</b>\n\n"
         "🔥 Chia sẻ tài khoản Pro/Teams miễn phí!\n\n"
         "⚠️ <i>Quy định:</i>\n"
-        "• Mỗi ngày được lấy <b>tối đa 5 lần</b> cho mỗi dịch vụ\n"
+        "• Mỗi ngày được lấy <b>tối đa 10 lần</b> cho mỗi dịch vụ\n"
         "• Mỗi lần nhận <b>1 tài khoản ngẫu nhiên</b>\n"
         "❤️ Dùng hợp lý, không đổi pass nhé!\n\n"
         f"{get_today_stats()}\n\n"
@@ -197,7 +197,7 @@ def start(msg):
 def taikhoan_command(msg):
     menu_text = (
         "📋 <b>Chọn dịch vụ để nhận 1 tài khoản free</b>\n"
-        "(Mỗi ngày tối đa 5 lần mỗi dịch vụ)\n\n"
+        "(Mỗi ngày tối đa 10 lần mỗi dịch vụ)\n\n"
         f"{get_today_stats()}\n\n"
         "👇 Chọn bên dưới để nhận ngay!"
     )
@@ -227,7 +227,7 @@ def handle_keyword(msg):
     if selected_key:
         menu_text = (
             f"🔥 <b>Bạn muốn nhận {FREE_ACCOUNTS[selected_key]['name']}?</b>\n"
-            f"(Mỗi ngày tối đa 5 lần)\n\n"
+            f"(Mỗi ngày tối đa 10 lần)\n\n"
             f"{get_today_stats()}\n\n"
             "👇 Chọn bên dưới để nhận ngay!"
         )
@@ -258,7 +258,7 @@ def handle_inline_get(call):
     if not can_user_take_today(user_id, service_key):
         bot.answer_callback_query(
             call.id,
-            f"⛔ Hôm nay bạn đã lấy đủ 5 lần {service['name']} rồi!\nNgày mai quay lại nhé ❤️",
+            f"⛔ Hôm nay bạn đã lấy đủ 10 lần {service['name']} rồi!\nNgày mai quay lại nhé ❤️",
             show_alert=True
         )
         return
@@ -275,13 +275,13 @@ def handle_inline_get(call):
         f"<b>Dịch vụ:</b> {service['name']}\n"
         f"<b>Tài khoản:</b>\n<code>{account}</code>\n\n"
         f"✅ Dùng hợp lý nhé!\n"
-        f"📊 <b>Bạn đã lấy {current_count}/2 lần hôm nay</b>\n"
-        f"🔄 Ngày mai reset lại 5 lần mới!"
+        f"📊 <b>Bạn đã lấy {current_count}/10 lần hôm nay</b>\n"
+        f"🔄 Ngày mai reset lại 10 lần mới!"
     )
     
     try:
         bot.send_message(user_id, text, parse_mode="HTML")
-        bot.answer_callback_query(call.id, f"✅ Đã gửi (lần {current_count}/5)!", show_alert=False)
+        bot.answer_callback_query(call.id, f"✅ Đã gửi (lần {current_count}/10)!", show_alert=False)
     except:
         bot.answer_callback_query(call.id, "❌ Vui lòng chat riêng với bot để nhận!", show_alert=True)
 
