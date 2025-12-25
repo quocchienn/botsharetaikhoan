@@ -17,6 +17,8 @@ DB_NAME = os.getenv("DB_NAME", "free_share_bot")
 if not BOT_TOKEN or not MONGO_URI:
     raise ValueError("Thiết lập BOT_TOKEN và MONGO_URI trong Environment Variables!")
 
+ADMIN_ID = 5589888565  # ID admin duy nhất - chỉ bạn dùng được lệnh reset
+
 # ================== DANH SÁCH TÀI KHOẢN FREE VỚI KEYWORDS ==================
 
 FREE_ACCOUNTS = {
@@ -25,43 +27,40 @@ FREE_ACCOUNTS = {
         "emoji": "🎬",
         "keywords": ["capcut", "cap", "cut", "cap cut"],
         "accounts": [
-            "Email: hocey76005@m3player.com | Pass: Chien2007",
-            "Email: xadas61730@m3player.com | Pass: Chien2k5",
-            "Email: fajic10847@m3player.com | Pass: Freecamdoihoi",
             "Email: wilber22mjg0bl83@hunght1890.com | Pass: a123456",
-    "Email: fredy.rath2mjg0bjj5@hunght1890.com | Pass: a123456",
-    "Email: houston_jacomjhfyx4u@hunght1890.com | Pass: a123456",
-    "Email: savanah_olsomjhfyeja@hunght1890.com | Pass: a123456",
-    "Email: maureen_dibbmjhfyx7x@hunght1890.com | Pass: a123456",
-    "Email: barney.kutchmjhfyea3@hunght1890.com | Pass: a123456",
-    "Email: elmo.graham2mjhfxocw@hunght1890.com | Pass: a123456",
-    "Email: tate.howell9mjhfxm9q@hunght1890.com | Pass: a123456",
-    "Email: tatum_stiedemjhfxngn@hunght1890.com | Pass: a123456",
-    "Email: fay_gerlachmjhfxn8u@hunght1890.com | Pass: a123456",
-    "Email: daija.rempelmjhfyxlv@hunght1890.com | Pass: a123456",
-    "Email: carrie.mayermjf5tirj@hunght1890.com | Pass: a123456",
-    "Email: madonna_swifmjf5tjcj@hunght1890.com | Pass: a123456",
-    "Email: lauretta.emmmjf44k0g@hunght1890.com | Pass: a123456",
-    "Email: eveline_goodmjf5thna@hunght1890.com | Pass: a123456",
-    "Email: buster_torp1mjf5tho6@hunght1890.com | Pass: a123456",
-    "Email: major_boyle1mjf5timc@hunght1890.com | Pass: a123456",
-    "Email: ursula.raumjf44jjh@hunght1890.com | Pass: a123456",
-    "Email: anya2mjf44jcj@hunght1890.com | Pass: a123456",
-    "Email: jillian_waelmjf9fimu@hunght1890.com | Pass: a123456",
-    "Email: eliezer40mjf9fknl@hunght1890.com | Pass: a123456",
-    "Email: aditya_ebertmjf9jf0f@hunght1890.com | Pass: a123456",
-    "Email: dave.bartolemjf9i4e5@hunght1890.com | Pass: a123456",
-    "Email: casandra.mclmjf9i4rv@hunght1890.com | Pass: a123456",
-    "Email: breana.moscimjf9jdvs@hunght1890.com | Pass: a123456",
-    "Email: sandy_schmitmjf9jeaa@hunght1890.com | Pass: a123456",
-    "Email: chesley_davimjf9jdgy@hunght1890.com | Pass: a123456",
-    "Email: finn.robertsmjf44iyq@hunght1890.com | Pass: a123456",
-    "Email: chelsey.nikomjf9i4nj@hunght1890.com | Pass: a123456",
-    "Email: annette11mjf9k9am@hunght1890.com | Pass: a123456",
+            "Email: fredy.rath2mjg0bjj5@hunght1890.com | Pass: a123456",
+            "Email: houston_jacomjhfyx4u@hunght1890.com | Pass: a123456",
+            "Email: savanah_olsomjhfyeja@hunght1890.com | Pass: a123456",
+            "Email: maureen_dibbmjhfyx7x@hunght1890.com | Pass: a123456",
+            "Email: barney.kutchmjhfyea3@hunght1890.com | Pass: a123456",
+            "Email: elmo.graham2mjhfxocw@hunght1890.com | Pass: a123456",
+            "Email: tate.howell9mjhfxm9q@hunght1890.com | Pass: a123456",
+            "Email: tatum_stiedemjhfxngn@hunght1890.com | Pass: a123456",
+            "Email: fay_gerlachmjhfxn8u@hunght1890.com | Pass: a123456",
+            "Email: daija.rempelmjhfyxlv@hunght1890.com | Pass: a123456",
+            "Email: carrie.mayermjf5tirj@hunght1890.com | Pass: a123456",
+            "Email: madonna_swifmjf5tjcj@hunght1890.com | Pass: a123456",
+            "Email: lauretta.emmmjf44k0g@hunght1890.com | Pass: a123456",
+            "Email: eveline_goodmjf5thna@hunght1890.com | Pass: a123456",
+            "Email: buster_torp1mjf5tho6@hunght1890.com | Pass: a123456",
+            "Email: major_boyle1mjf5timc@hunght1890.com | Pass: a123456",
+            "Email: ursula.raumjf44jjh@hunght1890.com | Pass: a123456",
+            "Email: anya2mjf44jcj@hunght1890.com | Pass: a123456",
+            "Email: jillian_waelmjf9fimu@hunght1890.com | Pass: a123456",
+            "Email: eliezer40mjf9fknl@hunght1890.com | Pass: a123456",
+            "Email: aditya_ebertmjf9jf0f@hunght1890.com | Pass: a123456",
+            "Email: dave.bartolemjf9i4e5@hunght1890.com | Pass: a123456",
+            "Email: casandra.mclmjf9i4rv@hunght1890.com | Pass: a123456",
+            "Email: breana.moscimjf9jdvs@hunght1890.com | Pass: a123456",
+            "Email: sandy_schmitmjf9jeaa@hunght1890.com | Pass: a123456",
+            "Email: chesley_davimjf9jdgy@hunght1890.com | Pass: a123456",
+            "Email: finn.robertsmjf44iyq@hunght1890.com | Pass: a123456",
+            "Email: chelsey.nikomjf9i4nj@hunght1890.com | Pass: a123456",
+            "Email: annette11mjf9k9am@hunght1890.com | Pass: a123456",
         ]
-},
+    },
     "chatgpt": {
-        "name": "ChatGPT",
+        "name": "ChatGPT Shared",
         "emoji": "🤖",
         "keywords": ["chatgpt", "gpt", "chat gpt", "ai"],
         "accounts": [
@@ -72,7 +71,7 @@ FREE_ACCOUNTS = {
             "Email: bemohi4340@gamintor.com | Pass: quocchien723140",
         ]
     },
-    "canva": {
+      "canva": {
         "name": "Canva Pro Teams Free",
         "emoji": "🎨",
         "keywords": ["canva", "design", "thietke", "can va"],
@@ -89,7 +88,6 @@ FREE_ACCOUNTS = {
         ]
     },
 }
-
 # ================== KHỞI TẠO ==================
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -146,7 +144,6 @@ def inline_service_menu():
     return kb
 
 def get_today_stats():
-    """Trả về chuỗi thống kê đẹp để hiển thị cho mọi người"""
     today = date.today().isoformat()
     stats = []
     total = 0
@@ -182,7 +179,7 @@ def start(msg):
         "• Mỗi ngày được lấy <b>tối đa 5 lần</b> cho mỗi dịch vụ\n"
         "• Mỗi lần nhận <b>1 tài khoản ngẫu nhiên</b>\n"
         "❤️ Dùng hợp lý, không đổi pass nhé!\n\n"
-        f"{get_today_stats()}\n\n"  # Thêm thống kê ở đây
+        f"{get_today_stats()}\n\n"
         "👇 Chọn dịch vụ để nhận ngay!\n"
         "<i>Gõ capcut, chatgpt, canva, netflix để mở nhanh</i>"
     )
@@ -194,29 +191,28 @@ def start(msg):
         reply_markup=inline_service_menu()
     )
 
-# ================== /taikhoan VÀ TỪ KHÓA NGẮN ==================
+# ================== /taikhoan ==================
 
-def send_menu_with_stats(chat_id, is_group=False):
+@bot.message_handler(commands=["taikhoan"])
+def taikhoan_command(msg):
     menu_text = (
         "📋 <b>Chọn dịch vụ để nhận 1 tài khoản free</b>\n"
-        "(Mỗi ngày tối đa 5  lần mỗi dịch vụ)\n\n"
+        "(Mỗi ngày tối đa 5 lần mỗi dịch vụ)\n\n"
         f"{get_today_stats()}\n\n"
         "👇 Chọn bên dưới để nhận ngay!"
     )
     
     menu_msg = bot.send_message(
-        chat_id,
+        msg.chat.id,
         menu_text,
         parse_mode="HTML",
         reply_markup=inline_service_menu()
     )
     
-    if is_group:
-        delete_message_later(chat_id, menu_msg.message_id, delay=15)
+    if msg.chat.type in ["group", "supergroup"]:
+        delete_message_later(msg.chat.id, menu_msg.message_id, delay=15)
 
-@bot.message_handler(commands=["taikhoan"])
-def taikhoan_command(msg):
-    send_menu_with_stats(msg.chat.id, is_group=(msg.chat.type in ["group", "supergroup"]))
+# ================== XỬ LÝ TỪ KHÓA NGẮN ==================
 
 @bot.message_handler(func=lambda m: True)
 def handle_keyword(msg):
@@ -229,7 +225,22 @@ def handle_keyword(msg):
             break
     
     if selected_key:
-        send_menu_with_stats(msg.chat.id, is_group=(msg.chat.type in ["group", "supergroup"]))
+        menu_text = (
+            f"🔥 <b>Bạn muốn nhận {FREE_ACCOUNTS[selected_key]['name']}?</b>\n"
+            f"(Mỗi ngày tối đa 5 lần)\n\n"
+            f"{get_today_stats()}\n\n"
+            "👇 Chọn bên dưới để nhận ngay!"
+        )
+        
+        menu_msg = bot.send_message(
+            msg.chat.id,
+            menu_text,
+            parse_mode="HTML",
+            reply_markup=inline_service_menu()
+        )
+        
+        if msg.chat.type in ["group", "supergroup"]:
+            delete_message_later(msg.chat.id, menu_msg.message_id, delay=15)
 
 # ================== XỬ LÝ INLINE BUTTON ==================
 
@@ -264,7 +275,7 @@ def handle_inline_get(call):
         f"<b>Dịch vụ:</b> {service['name']}\n"
         f"<b>Tài khoản:</b>\n<code>{account}</code>\n\n"
         f"✅ Dùng hợp lý nhé!\n"
-        f"📊 <b>Bạn đã lấy {current_count}/5 lần hôm nay</b>\n"
+        f"📊 <b>Bạn đã lấy {current_count}/2 lần hôm nay</b>\n"
         f"🔄 Ngày mai reset lại 5 lần mới!"
     )
     
@@ -274,7 +285,7 @@ def handle_inline_get(call):
     except:
         bot.answer_callback_query(call.id, "❌ Vui lòng chat riêng với bot để nhận!", show_alert=True)
 
-# ================== CÁC LỆNH ADMIN MỚI: XÓA LƯỢT LẤY ===================
+# ================== LỆNH ADMIN (CHỈ ADMIN_ID = 5589888565) ==================
 
 @bot.message_handler(commands=["reset"])
 def reset_user(msg):
@@ -292,7 +303,7 @@ def reset_user(msg):
         user_id = int(parts[2])
         
         if service_key not in FREE_ACCOUNTS:
-            bot.reply_to(msg, f"❌ Dịch vụ không hợp lệ! Có: capcut, chatgpt, canva, netflix")
+            bot.reply_to(msg, "❌ Dịch vụ không tồn tại! Có: capcut, chatgpt, canva, netflix")
             return
         
         today = date.today().isoformat()
@@ -327,7 +338,7 @@ def reset_all_service(msg):
         service_key = parts[1].lower()
         
         if service_key not in FREE_ACCOUNTS:
-            bot.reply_to(msg, f"❌ Dịch vụ không hợp lệ! Có: capcut, chatgpt, canva, netflix")
+            bot.reply_to(msg, "❌ Dịch vụ không tồn tại! Có: capcut, chatgpt, canva, netflix")
             return
         
         today = date.today().isoformat()
@@ -360,7 +371,7 @@ def reset_all_today(msg):
 
 if __name__ == "__main__":
     print("🤖 Bot Share Tài Khoản Free đang khởi động...")
-    print("Admin có lệnh: /reset, /resetall, /resetalltoday để xóa lượt lấy")
+    print("Admin ID: 5589888565 - dùng /reset, /resetall, /resetalltoday")
     
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
