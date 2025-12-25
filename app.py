@@ -274,11 +274,93 @@ def handle_inline_get(call):
     except:
         bot.answer_callback_query(call.id, "❌ Vui lòng chat riêng với bot để nhận!", show_alert=True)
 
+# ================== CÁC LỆNH ADMIN MỚI: XÓA LƯỢT LẤY ==================
+
+@bot.message_handler(commands=["reset"])
+def reset_user(msg):
+    if msg.from_user.id != ADMIN_ID:
+        bot.reply_to(msg, "❌ Chỉ admin mới dùng lệnh này!")
+        return
+    
+    try:
+        parts = msg.text.split()
+        if len(parts) != 3:
+            bot.reply_to(msg, "Sử dụng: /reset <dịch_vụ> <user_id>\nVí dụ: /reset capcut 123456789")
+            return
+        
+        service_key = parts[1].lower()
+        user_id = int(parts[2])
+        
+        if service_key not in FREE_ACCOUNTS:
+            bot.reply_to(msg, f"❌ Dịch vụ không tồn tại! Các dịch vụ hợp lệ: {', '.join(FREE_ACCOUNTS.keys())}")
+            return
+        
+        today = date.today().isoformat()
+        result = users_collection.delete_one({
+            "user_id": user_id,
+            "service": service_key,
+            "date": today
+        })
+        
+        if result.deleted_count > 0:
+            bot.reply_to(msg, f"✅ Đã reset lượt lấy {FREE_ACCOUNTS[service_key]['name']} hôm nay cho user ID {user_id}")
+        else:
+            bot.reply_to(msg, f"ℹ️ Không tìm thấy lượt lấy nào của user {user_id} với {FREE_ACCOUNTS[service_key]['name']} hôm nay")
+    
+    except ValueError:
+        bot.reply_to(msg, "❌ User ID phải là số!")
+    except Exception as e:
+        bot.reply_to(msg, f"❌ Lỗi: {e}")
+
+@bot.message_handler(commands=["resetall"])
+def reset_all_service(msg):
+    if msg.from_user.id != ADMIN_ID:
+        bot.reply_to(msg, "❌ Chỉ admin mới dùng lệnh này!")
+        return
+    
+    try:
+        parts = msg.text.split()
+        if len(parts) != 2:
+            bot.reply_to(msg, "Sử dụng: /resetall <dịch_vụ>\nVí dụ: /resetall capcut")
+            return
+        
+        service_key = parts[1].lower()
+        
+        if service_key not in FREE_ACCOUNTS:
+            bot.reply_to(msg, f"❌ Dịch vụ không tồn tại! Các dịch vụ hợp lệ: {', '.join(FREE_ACCOUNTS.keys())}")
+            return
+        
+        today = date.today().isoformat()
+        result = users_collection.delete_many({
+            "service": service_key,
+            "date": today
+        })
+        
+        bot.reply_to(msg, f"✅ Đã reset lượt lấy {FREE_ACCOUNTS[service_key]['name']} hôm nay cho <b>{result.deleted_count}</b> người dùng!", parse_mode="HTML")
+    
+    except Exception as e:
+        bot.reply_to(msg, f"❌ Lỗi: {e}")
+
+@bot.message_handler(commands=["resetalltoday"])
+def reset_all_today(msg):
+    if msg.from_user.id != ADMIN_ID:
+        bot.reply_to(msg, "❌ Chỉ admin mới dùng lệnh này!")
+        return
+    
+    try:
+        today = date.today().isoformat()
+        result = users_collection.delete_many({"date": today})
+        
+        bot.reply_to(msg, f"🔥 Đã reset <b>HOÀN TOÀN</b> lượt lấy hôm nay cho tất cả dịch vụ!\nXóa {result.deleted_count} bản ghi.", parse_mode="HTML")
+    
+    except Exception as e:
+        bot.reply_to(msg, f"❌ Lỗi: {e}")
+
 # ================== CHẠY BOT + FLASK ==================
 
 if __name__ == "__main__":
     print("🤖 Bot Share Tài Khoản Free đang khởi động...")
-    print("Thống kê lượt lấy hiển thị công khai cho mọi người")
+    print("Admin có lệnh: /reset, /resetall, /resetalltoday để xóa lượt lấy")
     
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
