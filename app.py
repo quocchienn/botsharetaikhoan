@@ -89,6 +89,7 @@ FREE_ACCOUNTS = {
         ]
     },
 }
+
 # ================== KHỞI TẠO ==================
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -119,7 +120,7 @@ def can_user_take_today(user_id, service_key):
     })
     if record is None:
         return True
-    return record.get("count", 0) < 5
+    return record.get("count", 0) < 2
 
 def mark_user_taken(user_id, service_key):
     today = date.today().isoformat()
@@ -144,6 +145,23 @@ def inline_service_menu():
         ))
     return kb
 
+def get_today_stats():
+    """Trả về chuỗi thống kê đẹp để hiển thị cho mọi người"""
+    today = date.today().isoformat()
+    stats = []
+    total = 0
+    
+    for key, service in FREE_ACCOUNTS.items():
+        count = users_collection.count_documents({
+            "service": key,
+            "date": today
+        })
+        stats.append(f"{service['emoji']} {service['name']}: <b>{count} người lấy</b>")
+        total += count
+    
+    stats_text = "\n".join(stats)
+    return f"📊 <b>THỐNG KÊ HÔM NAY</b>\n{stats_text}\n\n💥 <b>Tổng cộng: {total} lượt lấy</b>"
+
 def delete_message_later(chat_id, message_id, delay=15):
     def delete():
         time.sleep(delay)
@@ -164,8 +182,9 @@ def start(msg):
         "• Mỗi ngày được lấy <b>tối đa 5 lần</b> cho mỗi dịch vụ\n"
         "• Mỗi lần nhận <b>1 tài khoản ngẫu nhiên</b>\n"
         "❤️ Dùng hợp lý, không đổi pass nhé!\n\n"
+        f"{get_today_stats()}\n\n"  # Thêm thống kê ở đây
         "👇 Chọn dịch vụ để nhận ngay!\n"
-        "<i>Gõ capcut, chatgpt, canva, netflix để mở menu nhanh</i>"
+        "<i>Gõ capcut, chatgpt, canva, netflix để mở nhanh</i>"
     )
     
     bot.send_message(
@@ -175,27 +194,29 @@ def start(msg):
         reply_markup=inline_service_menu()
     )
 
-# ================== /taikhoan ==================
+# ================== /taikhoan VÀ TỪ KHÓA NGẮN ==================
 
-@bot.message_handler(commands=["taikhoan"])
-def taikhoan_command(msg):
+def send_menu_with_stats(chat_id, is_group=False):
     menu_text = (
         "📋 <b>Chọn dịch vụ để nhận 1 tài khoản free</b>\n"
-        "(Mỗi ngày tối đa 5 lần mỗi dịch vụ)\n\n"
-        "⏳ <i>Menu này sẽ tự xóa sau 15 giây</i>"
+        "(Mỗi ngày tối đa 5  lần mỗi dịch vụ)\n\n"
+        f"{get_today_stats()}\n\n"
+        "👇 Chọn bên dưới để nhận ngay!"
     )
     
     menu_msg = bot.send_message(
-        msg.chat.id,
+        chat_id,
         menu_text,
         parse_mode="HTML",
         reply_markup=inline_service_menu()
     )
     
-    if msg.chat.type in ["group", "supergroup"]:
-        delete_message_later(msg.chat.id, menu_msg.message_id, delay=15)
+    if is_group:
+        delete_message_later(chat_id, menu_msg.message_id, delay=15)
 
-# ================== XỬ LÝ TỪ KHÓA NGẮN ==================
+@bot.message_handler(commands=["taikhoan"])
+def taikhoan_command(msg):
+    send_menu_with_stats(msg.chat.id, is_group=(msg.chat.type in ["group", "supergroup"]))
 
 @bot.message_handler(func=lambda m: True)
 def handle_keyword(msg):
@@ -207,26 +228,10 @@ def handle_keyword(msg):
             selected_key = key
             break
     
-    if not selected_key:
-        return
-    
-    menu_text = (
-        f"🔥 <b>Bạn muốn nhận {FREE_ACCOUNTS[selected_key]['name']}?</b>\n"
-        f"(Mỗi ngày tối đa 5 lần)\n\n"
-        f"👇 Chọn dịch vụ bên dưới để nhận ngay!"
-    )
-    
-    menu_msg = bot.send_message(
-        msg.chat.id,
-        menu_text,
-        parse_mode="HTML",
-        reply_markup=inline_service_menu()
-    )
-    
-    if msg.chat.type in ["group", "supergroup"]:
-        delete_message_later(msg.chat.id, menu_msg.message_id, delay=15)
+    if selected_key:
+        send_menu_with_stats(msg.chat.id, is_group=(msg.chat.type in ["group", "supergroup"]))
 
-# ================== XỬ LÝ INLINE ==================
+# ================== XỬ LÝ INLINE BUTTON ==================
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("get_"))
 def handle_inline_get(call):
@@ -273,7 +278,7 @@ def handle_inline_get(call):
 
 if __name__ == "__main__":
     print("🤖 Bot Share Tài Khoản Free đang khởi động...")
-    print("Gõ capcut, chatgpt, canva, netflix → hiện menu inline (tự xóa 15s trong nhóm)")
+    print("Thống kê lượt lấy hiển thị công khai cho mọi người")
     
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
