@@ -7,6 +7,7 @@ import threading
 import time
 import os
 from flask import Flask
+from telebot.apihelper import ApiTelegramException
 
 # ================== CẤU HÌNH ==================
 
@@ -62,21 +63,21 @@ FREE_ACCOUNTS = {
             "Email: fajic10847@m3player.com | Pass: Freecamdoihoi",
         ]
     },
-       "chatgpt": {
+    "chatgpt": {
         "name": "ChatGPT Plus",
         "emoji": "🤖",
         "keywords": ["chatgpt", "gpt", "chat gpt", "ai"],
-"accounts": [
-    "Email: fraunnapreneiquau-6959@tmp.x-lab.net | Pass: quocchien273612",
-    "Email: cebaxa7188@m3player.com | Pass: quocchien741210",
-    "Email: bemohi4340@gamintor.com | Pass: quocchien723140",
-    "Email: yupouseummoufei-5332@afw.fr.nf | Pass: quocchien1231451",
-    "Email: vageissuzittau-5813@afw.fr.nf | Pass: quocchien7134156",
-    "Email: ditufrimallei-6298@afw.fr.nf | Pass: quocchien1231616",
-    "Email: jitonnbufa-8521@sindwir.com | Pass: quocchien089562",
-]
+        "accounts": [
+            "Email: fraunnapreneiquau-6959@tmp.x-lab.net | Pass: quocchien273612",
+            "Email: cebaxa7188@m3player.com | Pass: quocchien741210",
+            "Email: bemohi4340@gamintor.com | Pass: quocchien723140",
+            "Email: yupouseummoufei-5332@afw.fr.nf | Pass: quocchien1231451",
+            "Email: vageissuzittau-5813@afw.fr.nf | Pass: quocchien7134156",
+            "Email: ditufrimallei-6298@afw.fr.nf | Pass: quocchien1231616",
+            "Email: jitonnbufa-8521@sindwir.com | Pass: quocchien089562",
+        ]
     },
-      "canva": {
+    "canva": {
         "name": "Canva Pro Teams Free",
         "emoji": "🎨",
         "keywords": ["canva", "design", "thietke", "can va"],
@@ -84,13 +85,14 @@ FREE_ACCOUNTS = {
             "Invite link: https://www.canva.com/brand/join?token=F8CsC2hexK3B8JRVWWOzeg&referrer=team-invite",
         ]
     },
-  "netflix": {
-    "name": "Netflix Shared",
-    "emoji": "📺",
-    "keywords": ["netflix", "nf", "phim", "net flix"],
-    "accounts": []  # ← Để trống như này = hết hàng
-},
+    "netflix": {
+        "name": "Netflix Shared",
+        "emoji": "📺",
+        "keywords": ["netflix", "nf", "phim", "net flix"],
+        "accounts": []  # ← Để trống như này = hết hàng
+    },
 }
+
 # ================== KHỞI TẠO ==================
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -260,7 +262,7 @@ def handle_keyword(msg):
         if msg.chat.type in ["group", "supergroup"]:
             delete_message_later(msg.chat.id, menu_msg.message_id, delay=15)
 
-# ================== XỬ LÝ INLINE BUTTON ==================
+# ================== XỬ LÝ INLINE BUTTON (ĐÃ FIX LỖI) ==================
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("get_"))
 def handle_inline_get(call):
@@ -268,26 +270,37 @@ def handle_inline_get(call):
     service_key = call.data.split("_")[1]
     
     if service_key not in FREE_ACCOUNTS:
-        bot.answer_callback_query(call.id, "❌ Dịch vụ không tồn tại!", show_alert=True)
+        try:
+            bot.answer_callback_query(call.id, "❌ Dịch vụ không tồn tại!", show_alert=True)
+        except (ApiTelegramException, Exception):
+            pass  # Im lặng nếu query quá cũ
         return
     
     service = FREE_ACCOUNTS[service_key]
     
     if len(service["accounts"]) == 0:
-        bot.answer_callback_query(call.id, "🔴 Dịch vụ này đã hết tài khoản!", show_alert=True)
+        try:
+            bot.answer_callback_query(call.id, "🔴 Dịch vụ này đã hết tài khoản!", show_alert=True)
+        except (ApiTelegramException, Exception):
+            pass
         return
     
     if not can_user_take_today(user_id, service_key):
-        bot.answer_callback_query(
-            call.id,
-            f"⛔ Hôm nay bạn đã lấy đủ 10 lần {service['name']} rồi!\nNgày mai quay lại nhé ❤️",
-            show_alert=True
-        )
+        try:
+            bot.answer_callback_query(
+                call.id,
+                f"⛔ Hôm nay bạn đã lấy đủ 10 lần {service['name']} rồi!\nNgày mai quay lại nhé ❤️",
+                show_alert=True
+            )
+        except (ApiTelegramException, Exception):
+            pass
         return
     
+    # Lấy tài khoản và đánh dấu
     account = get_one_random_account(service_key)
     current_count = mark_user_taken(user_id, service_key)
     
+    # Tạo nội dung tin nhắn
     text = (
         f"{service['emoji']} <b>BẠN ĐÃ NHẬN THÀNH CÔNG!</b>\n\n"
         f"<b>Dịch vụ:</b> {service['name']}\n"
@@ -297,11 +310,38 @@ def handle_inline_get(call):
         f"🔄 Ngày mai reset lại 10 lần mới!"
     )
     
+    # Cố gắng gửi tin nhắn riêng trước
+    success = False
     try:
         bot.send_message(user_id, text, parse_mode="HTML")
-        bot.answer_callback_query(call.id, f"✅ Đã gửi (lần {current_count}/10)!", show_alert=False)
-    except:
-        bot.answer_callback_query(call.id, "❌ Vui lòng chat riêng với bot để nhận!", show_alert=True)
+        success = True
+    except Exception:
+        success = False
+    
+    # Trả lời callback query một cách an toàn (KHÔNG BAO GIỜ GÂY LỖI)
+    try:
+        if success:
+            bot.answer_callback_query(
+                call.id, 
+                f"✅ Đã gửi vào chat riêng (lần {current_count}/10)!",
+                show_alert=False,
+                cache_time=5
+            )
+        else:
+            bot.answer_callback_query(
+                call.id, 
+                "❌ Vui lòng /start bot ở chat riêng để nhận tài khoản!",
+                show_alert=True,
+                cache_time=5
+            )
+    except ApiTelegramException as e:
+        # Im lặng bỏ qua nếu query đã quá hạn
+        if "query is too old" in str(e).lower() or "query ID is invalid" in str(e).lower():
+            pass
+        else:
+            print(f"Lỗi answer_callback_query khác: {e}")
+    except Exception as e:
+        print(f"Lỗi không mong muốn khi answer callback: {e}")
 
 # ================== LỆNH ADMIN ==================
 
