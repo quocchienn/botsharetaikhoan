@@ -17,13 +17,13 @@ DB_NAME = os.getenv("DB_NAME", "free_share_bot")
 if not BOT_TOKEN or not MONGO_URI:
     raise ValueError("Thiết lập BOT_TOKEN và MONGO_URI trong Environment Variables!")
 
-ADMIN_ID = 5589888565  # ID admin duy nhất - chỉ bạn dùng được lệnh reset
+ADMIN_ID = 5589888565  # ID admin duy nhất của bạn
 
-# ================== DANH SÁCH TÀI KHOẢN FREE VỚI KEYWORDS ==================
+# ================== DANH SÁCH TÀI KHOẢN FREE ==================
 
 FREE_ACCOUNTS = {
     "capcut": {
-        "name": "CapCut Pro Free",
+        "name": "CapCut Pro",
         "emoji": "🎬",
         "keywords": ["capcut", "cap", "cut", "cap cut"],
         "accounts": [
@@ -43,24 +43,7 @@ FREE_ACCOUNTS = {
             "Email: lauretta.emmmjf44k0g@hunght1890.com | Pass: a123456",
             "Email: eveline_goodmjf5thna@hunght1890.com | Pass: a123456",
             "Email: buster_torp1mjf5tho6@hunght1890.com | Pass: a123456",
-            "Email: major_boyle1mjf5timc@hunght1890.com | Pass: a123456",
-            "Email: ursula.raumjf44jjh@hunght1890.com | Pass: a123456",
-            "Email: anya2mjf44jcj@hunght1890.com | Pass: a123456",
-            "Email: jillian_waelmjf9fimu@hunght1890.com | Pass: a123456",
-            "Email: eliezer40mjf9fknl@hunght1890.com | Pass: a123456",
-            "Email: aditya_ebertmjf9jf0f@hunght1890.com | Pass: a123456",
-            "Email: dave.bartolemjf9i4e5@hunght1890.com | Pass: a123456",
-            "Email: casandra.mclmjf9i4rv@hunght1890.com | Pass: a123456",
-            "Email: breana.moscimjf9jdvs@hunght1890.com | Pass: a123456",
-            "Email: sandy_schmitmjf9jeaa@hunght1890.com | Pass: a123456",
-            "Email: chesley_davimjf9jdgy@hunght1890.com | Pass: a123456",
-            "Email: finn.robertsmjf44iyq@hunght1890.com | Pass: a123456",
-            "Email: chelsey.nikomjf9i4nj@hunght1890.com | Pass: a123456",
-            "Email: annette11mjf9k9am@hunght1890.com | Pass: a123456",
-        ]
-    },
-    "chatgpt": {
-        "name": "ChatGPT Shared",
+            "Email: major_boyle1mjfPLUS",
         "emoji": "🤖",
         "keywords": ["chatgpt", "gpt", "chat gpt", "ai"],
 "accounts": [
@@ -81,15 +64,12 @@ FREE_ACCOUNTS = {
             "Invite link: https://www.canva.com/brand/join?token=F8CsC2hexK3B8JRVWWOzeg&referrer=team-invite",
         ]
     },
-    "netflix": {
-        "name": "Netflix Shared",
-        "emoji": "📺",
-        "keywords": ["netflix", "nf", "phim", "net flix"],
-        "accounts": [
-            "Email: firstmail640@gmail10p.com | Pass: GHAX12170",
-        ]
-    },
-}
+  "netflix": {
+    "name": "Netflix Shared",
+    "emoji": "📺",
+    "keywords": ["netflix", "nf", "phim", "net flix"],
+    "accounts": []  # ← Để trống như này = hết hàng
+},
 # ================== KHỞI TẠO ==================
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -120,7 +100,7 @@ def can_user_take_today(user_id, service_key):
     })
     if record is None:
         return True
-    return record.get("count", 0) < 10
+    return record.get("count", 0) < 10  # Giới hạn 10 lần/ngày
 
 def mark_user_taken(user_id, service_key):
     today = date.today().isoformat()
@@ -134,13 +114,27 @@ def mark_user_taken(user_id, service_key):
 
 def get_one_random_account(service_key):
     accounts = FREE_ACCOUNTS[service_key]["accounts"]
-    return random.choice(accounts) if accounts else None
+    if not accounts:
+        return None
+    return random.choice(accounts)
+
+def get_remaining_count(service_key):
+    count = len(FREE_ACCOUNTS.get(service_key, {}).get("accounts", []))
+    if count == 0:
+        return "🔴 Hết hàng"
+    elif count <= 5:
+        return f"🟡 Còn: {count} (Sắp hết)"
+    else:
+        return f"🟢 Còn: {count}"
 
 def inline_service_menu():
     kb = types.InlineKeyboardMarkup(row_width=1)
     for key, service in FREE_ACCOUNTS.items():
+        remaining = get_remaining_count(key)
+        if "Hết hàng" in remaining:
+            continue  # Không hiện nút nếu hết hàng
         kb.add(types.InlineKeyboardButton(
-            text=f"{service['emoji']} {service['name']}",
+            text=f"{service['emoji']} {service['name']} | {remaining}",
             callback_data=f"get_{key}"
         ))
     return kb
@@ -148,18 +142,19 @@ def inline_service_menu():
 def get_today_stats():
     today = date.today().isoformat()
     stats = []
-    total = 0
+    total_taken = 0
     
     for key, service in FREE_ACCOUNTS.items():
-        count = users_collection.count_documents({
+        taken = users_collection.count_documents({
             "service": key,
             "date": today
         })
-        stats.append(f"{service['emoji']} {service['name']}: <b>{count} người lấy</b>")
-        total += count
+        remaining = get_remaining_count(key)
+        stats.append(f"{service['emoji']} {service['name']}: {remaining} | <b>{taken} người lấy</b>")
+        total_taken += taken
     
     stats_text = "\n".join(stats)
-    return f"📊 <b>THỐNG KÊ HÔM NAY</b>\n{stats_text}\n\n💥 <b>Tổng cộng: {total} lượt lấy</b>"
+    return f"📊 <b>THỐNG KÊ & TỒN KHO HÔM NAY</b>\n{stats_text}\n\n💥 <b>Tổng lượt lấy: {total_taken}</b>"
 
 def delete_message_later(chat_id, message_id, delay=15):
     def delete():
@@ -182,7 +177,7 @@ def start(msg):
         "• Mỗi lần nhận <b>1 tài khoản ngẫu nhiên</b>\n"
         "❤️ Dùng hợp lý, không đổi pass nhé!\n\n"
         f"{get_today_stats()}\n\n"
-        "👇 Chọn dịch vụ để nhận ngay!\n"
+        "👇 Chọn dịch vụ còn hàng để nhận ngay!\n"
         "<i>Gõ capcut, chatgpt, canva, netflix để mở nhanh</i>"
     )
     
@@ -257,6 +252,10 @@ def handle_inline_get(call):
     
     service = FREE_ACCOUNTS[service_key]
     
+    if len(service["accounts"]) == 0:
+        bot.answer_callback_query(call.id, "🔴 Dịch vụ này đã hết tài khoản!", show_alert=True)
+        return
+    
     if not can_user_take_today(user_id, service_key):
         bot.answer_callback_query(
             call.id,
@@ -266,10 +265,6 @@ def handle_inline_get(call):
         return
     
     account = get_one_random_account(service_key)
-    if not account:
-        bot.answer_callback_query(call.id, "❌ Hiện chưa có tài khoản cho dịch vụ này!", show_alert=True)
-        return
-    
     current_count = mark_user_taken(user_id, service_key)
     
     text = (
@@ -287,7 +282,7 @@ def handle_inline_get(call):
     except:
         bot.answer_callback_query(call.id, "❌ Vui lòng chat riêng với bot để nhận!", show_alert=True)
 
-# ================== LỆNH ADMIN (CHỈ ADMIN_ID = 5589888565) ==================
+# ================== LỆNH ADMIN ==================
 
 @bot.message_handler(commands=["reset"])
 def reset_user(msg):
@@ -372,8 +367,7 @@ def reset_all_today(msg):
 # ================== CHẠY BOT + FLASK ==================
 
 if __name__ == "__main__":
-    print("🤖 Bot Share Tài Khoản Free đang khởi động...")
-    print("Admin ID: 5589888565 - dùng /reset, /resetall, /resetalltoday")
+    print("🤖 Bot Share Tài Khoản Free đang khởi động với tồn kho và thống kê...")
     
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
