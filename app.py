@@ -201,14 +201,18 @@ def start(msg):
         "❤️ Dùng hợp lý, không đổi pass nhé!\n\n"
         f"{get_today_stats()}\n\n"
         "👇 Chọn dịch vụ còn hàng để nhận ngay!\n"
-        "<i>Gõ capcut, chatgpt, canva, netflix để mở nhanh</i>"
+        "<i>Gõ capcut, chatgpt, canva, netflix để mở nhanh</i>\n\n"
+        "📹 <b>HƯỚNG DẪN SỬ DỤNG CHATGPT PLUS</b>\n"
+        "Xem video hướng dẫn chi tiết cách dùng ChatGPT hiệu quả (dành cho người mới):\n"
+        "https://www.youtube.com/watch?v=1fO486pvyJA"
     )
     
     bot.send_message(
         msg.chat.id,
         welcome_text,
         parse_mode="HTML",
-        reply_markup=inline_service_menu()
+        reply_markup=inline_service_menu(),
+        disable_web_page_preview=True
     )
 
 # ================== /taikhoan ==================
@@ -307,13 +311,16 @@ def handle_inline_get(call):
         f"<b>Tài khoản:</b>\n<code>{account}</code>\n\n"
         f"✅ Dùng hợp lý nhé!\n"
         f"📊 <b>Bạn đã lấy {current_count}/10 lần hôm nay</b>\n"
-        f"🔄 Ngày mai reset lại 10 lần mới!"
+        f"🔄 Ngày mai reset lại 10 lần mới!\n\n"
+        "📹 <b>HƯỚNG DẪN SỬ DỤNG</b>\n"
+        "Xem video chi tiết cách dùng ChatGPT Plus hiệu quả (cập nhật 2025):\n"
+        "https://www.youtube.com/watch?v=1fO486pvyJA"
     )
     
     # Cố gắng gửi tin nhắn riêng trước
     success = False
     try:
-        bot.send_message(user_id, text, parse_mode="HTML")
+        bot.send_message(user_id, text, parse_mode="HTML", disable_web_page_preview=True)
         success = True
     except Exception:
         success = False
