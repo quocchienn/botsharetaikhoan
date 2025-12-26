@@ -315,7 +315,8 @@ def handle_inline_get(call):
         f"🔄 Ngày mai reset lại 10 lần mới!\n\n"
         "📹 <b>HƯỚNG DẪN SỬ DỤNG</b>\n"
         "Xem video chi tiết cách dùng ChatGPT Plus hiệu quả (cập nhật 2025):\n"
-        "https://www.youtube.com/watch?v=1fO486pvyJA"
+        "https://www.youtube.com/watch?v=\n"
+        "https://yopmail.com/"
     )
     
     # Cố gắng gửi tin nhắn riêng trước
