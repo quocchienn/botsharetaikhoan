@@ -63,13 +63,15 @@ FREE_ACCOUNTS = {
         "name": "ChatGPT Shared",
         "emoji": "🤖",
         "keywords": ["chatgpt", "gpt", "chat gpt", "ai"],
-        "accounts": [
-            "Email: rorekay973@gamintor.com | Pass: quocchienv2123",
-            "Email: fafovid463@gamintor.com | Pass: quocchien273162",
-            "Email: cebaxa7188@m3player.com | Pass: quocchien741210",
-            "Email: jahiw31399@m3player.com | Pass: quocchien170121",
-            "Email: bemohi4340@gamintor.com | Pass: quocchien723140",
-        ]
+"accounts": [
+    "Email: fraunnapreneiquau-6959@tmp.x-lab.net | Pass: quocchien273612",
+    "Email: cebaxa7188@m3player.com | Pass: quocchien741210",
+    "Email: bemohi4340@gamintor.com | Pass: quocchien723140",
+    "Email: yupouseummoufei-5332@afw.fr.nf | Pass: quocchien1231451",
+    "Email: vageissuzittau-5813@afw.fr.nf | Pass: quocchien7134156",
+    "Email: ditufrimallei-6298@afw.fr.nf | Pass: quocchien1231616",
+    "Email: jitonnbufa-8521@sindwir.com | Pass: quocchien089562",
+]
     },
       "canva": {
         "name": "Canva Pro Teams Free",
