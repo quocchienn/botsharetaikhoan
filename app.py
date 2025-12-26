@@ -82,7 +82,7 @@ FREE_ACCOUNTS = {
         "emoji": "🎨",
         "keywords": ["canva", "design", "thietke", "can va"],
         "accounts": [
-            "Invite link: https://www.canva.com/brand/join?token=F8CsC2hexK3B8JRVWWOzeg&referrer=team-invite",
+            "Invite link: https://www.canva.com/brand/join?token=xtJSXSD3-EgYjrGntr1jxA&referrer=team-invite",
         ]
     },
     "netflix": {
