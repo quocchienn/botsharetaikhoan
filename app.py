@@ -118,7 +118,7 @@ def can_user_take_today(user_id, service_key):
     })
     if record is None:
         return True
-    return record.get("count", 0) < 2
+    return record.get("count", 0) < 10
 
 def mark_user_taken(user_id, service_key):
     today = date.today().isoformat()
