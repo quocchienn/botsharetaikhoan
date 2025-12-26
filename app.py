@@ -90,6 +90,7 @@ FREE_ACCOUNTS = {
     "keywords": ["netflix", "nf", "phim", "net flix"],
     "accounts": []  # ← Để trống như này = hết hàng
 },
+}
 # ================== KHỞI TẠO ==================
 
 bot = telebot.TeleBot(BOT_TOKEN)
