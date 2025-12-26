@@ -205,6 +205,7 @@ def start(msg):
         "📹 <b>HƯỚNG DẪN SỬ DỤNG CHATGPT PLUS</b>\n"
         "Xem video hướng dẫn chi tiết cách dùng ChatGPT hiệu quả (dành cho người mới):\n"
         "https://www.youtube.com/watch?v=1fO486pvyJA"
+        "https://yopmail.com/"
     )
     
     bot.send_message(
