@@ -204,7 +204,7 @@ def start(msg):
         "<i>Gõ capcut, chatgpt, canva, netflix để mở nhanh</i>\n\n"
         "📹 <b>HƯỚNG DẪN SỬ DỤNG CHATGPT PLUS</b>\n"
         "Xem video hướng dẫn chi tiết cách dùng ChatGPT hiệu quả (dành cho người mới):\n"
-        "https://www.youtube.com/watch?v=\n"
+        "https://youtu.be/u5GqqqJgfHQ\n"
         "https://yopmail.com/"
     )
     
@@ -315,7 +315,7 @@ def handle_inline_get(call):
         f"🔄 Ngày mai reset lại 10 lần mới!\n\n"
         "📹 <b>HƯỚNG DẪN SỬ DỤNG</b>\n"
         "Xem video chi tiết cách dùng ChatGPT Plus hiệu quả (cập nhật 2025):\n"
-        "https://www.youtube.com/watch?v=\n"
+        "https://youtu.be/u5GqqqJgfHQ\n"
         "https://yopmail.com/"
     )
     
