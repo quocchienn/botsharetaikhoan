@@ -69,8 +69,6 @@ FREE_ACCOUNTS = {
         "keywords": ["chatgpt", "gpt", "chat gpt", "ai"],
         "accounts": [
             "Email: fraunnapreneiquau-6959@tmp.x-lab.net | Pass: quocchien273612",
-            "Email: cebaxa7188@m3player.com | Pass: quocchien741210",
-            "Email: bemohi4340@gamintor.com | Pass: quocchien723140",
             "Email: yupouseummoufei-5332@afw.fr.nf | Pass: quocchien1231451",
             "Email: vageissuzittau-5813@afw.fr.nf | Pass: quocchien7134156",
             "Email: ditufrimallei-6298@afw.fr.nf | Pass: quocchien1231616",
