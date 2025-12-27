@@ -97,6 +97,15 @@ FREE_ACCOUNTS = {
             "Email: sifafoilosi-2195@bboys.fr.nf | Pass: Chien2058375",
         ]
     },
+    "hma": {
+        "name": "HMA VPN Pro",
+        "emoji": "🔒",
+        "keywords": ["hma", "vpn", "hide my ass", "hidemyass", "proxy"],
+        "accounts": [
+            "Email: hackiosipa@gmail.com | Pass: Chien2k5 | License Key: MTBUYN-4RCRWJ-5RUHF2",
+            # Bạn có thể thêm nhiều hơn nếu có
+        ]
+    },
 }
 
 # ================== KHỞI TẠO ==================
@@ -209,13 +218,12 @@ def start(msg):
         "❤️ Dùng hợp lý, không đổi pass nhé!\n\n"
         f"{get_today_stats()}\n\n"
         "👇 Chọn dịch vụ còn hàng để nhận ngay!\n"
-        "<i>Gõ capcut, chatgpt, canva, netflix, picsart để mở nhanh</i>\n\n"
+        "<i>Gõ capcut, chatgpt, canva, netflix, picsart, hma để mở nhanh</i>\n\n"
         "📹 <b>HƯỚNG DẪN SỬ DỤNG CHATGPT PLUS</b>\n"
         "Xem video hướng dẫn chi tiết cách dùng ChatGPT hiệu quả (dành cho người mới):\n"
         "https://youtu.be/u5GqqqJgfHQ\n"
         "https://yopmail.com/"
     )
-    
     
     bot.send_message(
         msg.chat.id,
@@ -313,7 +321,7 @@ def handle_inline_get(call):
     account = get_one_random_account(service_key)
     current_count = mark_user_taken(user_id, service_key)
     
-    # Tin nhắn cơ bản (không thêm video cho Picsart)
+    # Tin nhắn cơ bản
     text = (
         f"{service['emoji']} <b>BẠN ĐÃ NHẬN THÀNH CÔNG!</b>\n\n"
         f"<b>Dịch vụ:</b> {service['name']}\n"
@@ -323,15 +331,24 @@ def handle_inline_get(call):
         f"🔄 Ngày mai reset lại 10 lần mới!"
     )
     
-    # Chỉ thêm video hướng dẫn cho ChatGPT
+    # Chỉ thêm hướng dẫn cho ChatGPT
     if service_key == "chatgpt":
         text += (
-"\n\n📹 <b>HƯỚNG DẪN SỬ DỤNG</b>\n"
-        "Xem video chi tiết cách dùng ChatGPT Plus hiệu quả (cập nhật 2025):\n"
-        "https://youtu.be/u5GqqqJgfHQ\n"
-        "https://yopmail.com/"
-    )
+            "\n\n📹 <b>HƯỚNG DẪN SỬ DỤNG</b>\n"
+            "Xem video chi tiết cách dùng ChatGPT Plus hiệu quả (cập nhật 2025):\n"
+            "https://youtu.be/u5GqqqJgfHQ\n"
+            "https://yopmail.com/"
+        )
     
+    # Hướng dẫn riêng cho HMA VPN
+    if service_key == "hma":
+        text += (
+            "\n\n🔐 <b>HƯỚNG DẪN SỬ DỤNG HMA VPN</b>\n"
+            "1. Tải app HMA VPN tại: https://www.hidemyass.com/en-us/downloads\n"
+            "2. Đăng nhập bằng Email + Pass\n"
+            "3. Nếu yêu cầu License Key → Dán key vào phần Activate/Enter Key\n"
+            "❤️ Không đổi pass để mọi người cùng dùng nhé!"
+        )
     
     success = False
     try:
@@ -381,7 +398,7 @@ def reset_user(msg):
         user_id = int(parts[2])
         
         if service_key not in FREE_ACCOUNTS:
-            bot.reply_to(msg, "❌ Dịch vụ không tồn tại! Có: capcut, chatgpt, canva, netflix, picsart")
+            bot.reply_to(msg, "❌ Dịch vụ không tồn tại! Có: capcut, chatgpt, canva, netflix, picsart, hma")
             return
         
         today = date.today().isoformat()
@@ -416,7 +433,7 @@ def reset_all_service(msg):
         service_key = parts[1].lower()
         
         if service_key not in FREE_ACCOUNTS:
-            bot.reply_to(msg, "❌ Dịch vụ không tồn tại! Có: capcut, chatgpt, canva, netflix, picsart")
+            bot.reply_to(msg, "❌ Dịch vụ không tồn tại! Có: capcut, chatgpt, canva, netflix, picsart, hma")
             return
         
         today = date.today().isoformat()
