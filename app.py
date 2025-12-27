@@ -89,6 +89,14 @@ FREE_ACCOUNTS = {
         "keywords": ["netflix", "nf", "phim", "net flix"],
         "accounts": []  # ← Để trống như này = hết hàng
     },
+    "picsart": {
+        "name": "Picsart Gold",
+        "emoji": "🖼️",
+        "keywords": ["picsart", "pic", "pics art", "edit anh", "chinh anh"],
+        "accounts": [
+            "Email: sifafoilosi-2195@bboys.fr.nf | Pass: Chien2058375",
+        ]
+    },
 }
 
 # ================== KHỞI TẠO ==================
@@ -126,7 +134,9 @@ def can_user_take_today(user_id, service_key):
 def mark_user_taken(user_id, service_key):
     today = date.today().isoformat()
     result = users_collection.find_one_and_update(
-        {"user_id": user_id, "service": service_key, "date": today},
+        {"user_id": user_id,
+         "service": service_key,
+         "date": today},
         {"$inc": {"count": 1}, "$setOnInsert": {"taken_at": datetime.now()}},
         upsert=True,
         return_document=True
@@ -153,7 +163,7 @@ def inline_service_menu():
     for key, service in FREE_ACCOUNTS.items():
         remaining = get_remaining_count(key)
         if "Hết hàng" in remaining:
-            continue  # Không hiện nút nếu hết hàng
+            continue
         kb.add(types.InlineKeyboardButton(
             text=f"{service['emoji']} {service['name']} | {remaining}",
             callback_data=f"get_{key}"
@@ -199,12 +209,13 @@ def start(msg):
         "❤️ Dùng hợp lý, không đổi pass nhé!\n\n"
         f"{get_today_stats()}\n\n"
         "👇 Chọn dịch vụ còn hàng để nhận ngay!\n"
-        "<i>Gõ capcut, chatgpt, canva, netflix để mở nhanh</i>\n\n"
+        "<i>Gõ capcut, chatgpt, canva, netflix, picsart để mở nhanh</i>\n\n"
         "📹 <b>HƯỚNG DẪN SỬ DỤNG CHATGPT PLUS</b>\n"
         "Xem video hướng dẫn chi tiết cách dùng ChatGPT hiệu quả (dành cho người mới):\n"
         "https://youtu.be/u5GqqqJgfHQ\n"
         "https://yopmail.com/"
     )
+    
     
     bot.send_message(
         msg.chat.id,
@@ -265,7 +276,7 @@ def handle_keyword(msg):
         if msg.chat.type in ["group", "supergroup"]:
             delete_message_later(msg.chat.id, menu_msg.message_id, delay=15)
 
-# ================== XỬ LÝ INLINE BUTTON (ĐÃ FIX LỖI) ==================
+# ================== XỬ LÝ INLINE BUTTON ==================
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("get_"))
 def handle_inline_get(call):
@@ -276,7 +287,7 @@ def handle_inline_get(call):
         try:
             bot.answer_callback_query(call.id, "❌ Dịch vụ không tồn tại!", show_alert=True)
         except (ApiTelegramException, Exception):
-            pass  # Im lặng nếu query quá cũ
+            pass
         return
     
     service = FREE_ACCOUNTS[service_key]
@@ -299,25 +310,29 @@ def handle_inline_get(call):
             pass
         return
     
-    # Lấy tài khoản và đánh dấu
     account = get_one_random_account(service_key)
     current_count = mark_user_taken(user_id, service_key)
     
-    # Tạo nội dung tin nhắn
+    # Tin nhắn cơ bản (không thêm video cho Picsart)
     text = (
         f"{service['emoji']} <b>BẠN ĐÃ NHẬN THÀNH CÔNG!</b>\n\n"
         f"<b>Dịch vụ:</b> {service['name']}\n"
         f"<b>Tài khoản:</b>\n<code>{account}</code>\n\n"
         f"✅ Dùng hợp lý nhé!\n"
         f"📊 <b>Bạn đã lấy {current_count}/10 lần hôm nay</b>\n"
-        f"🔄 Ngày mai reset lại 10 lần mới!\n\n"
-        "📹 <b>HƯỚNG DẪN SỬ DỤNG</b>\n"
+        f"🔄 Ngày mai reset lại 10 lần mới!"
+    )
+    
+    # Chỉ thêm video hướng dẫn cho ChatGPT
+    if service_key == "chatgpt":
+        text += (
+"\n\n📹 <b>HƯỚNG DẪN SỬ DỤNG</b>\n"
         "Xem video chi tiết cách dùng ChatGPT Plus hiệu quả (cập nhật 2025):\n"
         "https://youtu.be/u5GqqqJgfHQ\n"
         "https://yopmail.com/"
     )
     
-    # Cố gắng gửi tin nhắn riêng trước
+    
     success = False
     try:
         bot.send_message(user_id, text, parse_mode="HTML", disable_web_page_preview=True)
@@ -325,7 +340,6 @@ def handle_inline_get(call):
     except Exception:
         success = False
     
-    # Trả lời callback query một cách an toàn (KHÔNG BAO GIỜ GÂY LỖI)
     try:
         if success:
             bot.answer_callback_query(
@@ -342,7 +356,6 @@ def handle_inline_get(call):
                 cache_time=5
             )
     except ApiTelegramException as e:
-        # Im lặng bỏ qua nếu query đã quá hạn
         if "query is too old" in str(e).lower() or "query ID is invalid" in str(e).lower():
             pass
         else:
@@ -368,7 +381,7 @@ def reset_user(msg):
         user_id = int(parts[2])
         
         if service_key not in FREE_ACCOUNTS:
-            bot.reply_to(msg, "❌ Dịch vụ không tồn tại! Có: capcut, chatgpt, canva, netflix")
+            bot.reply_to(msg, "❌ Dịch vụ không tồn tại! Có: capcut, chatgpt, canva, netflix, picsart")
             return
         
         today = date.today().isoformat()
@@ -403,7 +416,7 @@ def reset_all_service(msg):
         service_key = parts[1].lower()
         
         if service_key not in FREE_ACCOUNTS:
-            bot.reply_to(msg, "❌ Dịch vụ không tồn tại! Có: capcut, chatgpt, canva, netflix")
+            bot.reply_to(msg, "❌ Dịch vụ không tồn tại! Có: capcut, chatgpt, canva, netflix, picsart")
             return
         
         today = date.today().isoformat()
