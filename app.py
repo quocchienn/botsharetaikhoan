@@ -9,9 +9,9 @@ import os
 from flask import Flask, request, jsonify
 from telebot.apihelper import ApiTelegramException
 
-# ================== PAYOS (ĐÃ SỬA ĐÚNG THEO SDK CHÍNH THỨC MỚI NHẤT) ==================
+# ================== PAYOS (SỬA ĐÚNG 100% THEO SDK MỚI NHẤT - checkout_url) ==================
 from payos import PayOS
-from payos.types import CreatePaymentLinkRequest, ItemData  # Import đúng từ payos.types
+from payos.types import CreatePaymentLinkRequest, ItemData  # Import đúng
 
 # ================== CẤU HÌNH ==================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -28,7 +28,7 @@ if not all([BOT_TOKEN, MONGO_URI, PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM
 
 payOS = PayOS(PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY)
 
-ADMIN_ID = 5589888565  # ID admin
+ADMIN_ID = 5589888565
 
 # ================== TÀI KHOẢN FREE ==================
 FREE_ACCOUNTS = {
@@ -313,7 +313,7 @@ def callback(call):
         
         try:
             result = payOS.payment_requests.create(payment_data=payment_data)
-            checkout_url = result.checkoutUrl
+            checkout_url = result.checkout_url  # <--- SỬA CHÍNH Ở ĐÂY: checkout_url (chữ u thường)
             
             orders_collection.insert_one({
                 "order_code": order_code,
@@ -336,7 +336,7 @@ def callback(call):
             bot.answer_callback_query(call.id, "🔗 Link thanh toán đã gửi vào chat riêng!")
         except Exception as e:
             bot.answer_callback_query(call.id, "❌ Lỗi tạo link thanh toán!", show_alert=True)
-            print("PayOS create link error:", e)
+            print("PayOS error:", e)
 
 # ================== ADMIN UP FILE ==================
 @bot.message_handler(content_types=['document'])
@@ -396,6 +396,6 @@ def run_flask():
     app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 if __name__ == "__main__":
-    print("🤖 Bot Share Free + Premium (PayOS SDK chính thức mới nhất) đang khởi động...")
+    print("🤖 Bot Share Free + Premium (PayOS SDK hoàn chỉnh - checkout_url đã sửa) đang khởi động...")
     threading.Thread(target=run_flask, daemon=True).start()
     bot.infinity_polling(none_stop=True)
