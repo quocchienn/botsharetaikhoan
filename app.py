@@ -9,8 +9,9 @@ import os
 from flask import Flask, request, jsonify
 from telebot.apihelper import ApiTelegramException
 
-# ================== PAYOS (ĐÃ SỬA ĐÚNG THEO SDK MỚI NHẤT) ==================
-from payos import PayOS, PaymentData, ItemData  # Import trực tiếp từ payos
+# ================== PAYOS (ĐÃ SỬA ĐÚNG THEO SDK CHÍNH THỨC MỚI NHẤT) ==================
+from payos import PayOS
+from payos.types import CreatePaymentLinkRequest, ItemData  # Import đúng từ payos.types
 
 # ================== CẤU HÌNH ==================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -20,14 +21,14 @@ DB_NAME = os.getenv("DB_NAME", "free_share_bot")
 PAYOS_CLIENT_ID = os.getenv("PAYOS_CLIENT_ID")
 PAYOS_API_KEY = os.getenv("PAYOS_API_KEY")
 PAYOS_CHECKSUM_KEY = os.getenv("PAYOS_CHECKSUM_KEY")
-WEBHOOK_URL_BASE = os.getenv("WEBHOOK_URL_BASE")  # Ví dụ: https://your-bot.onrender.com
+WEBHOOK_URL_BASE = os.getenv("WEBHOOK_URL_BASE")  # https://your-bot.onrender.com
 
 if not all([BOT_TOKEN, MONGO_URI, PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY, WEBHOOK_URL_BASE]):
     raise ValueError("Thiếu biến môi trường quan trọng!")
 
 payOS = PayOS(PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY)
 
-ADMIN_ID = 5589888565  # ID admin của bạn
+ADMIN_ID = 5589888565  # ID admin
 
 # ================== TÀI KHOẢN FREE ==================
 FREE_ACCOUNTS = {
@@ -56,7 +57,6 @@ PAID_ACCOUNTS = {
         "keywords": ["netflix premium", "nf premium", "netflix mua"],
         "accounts": []
     },
-    # Thêm dịch vụ premium khác nếu cần
 }
 
 # ================== KHỞI TẠO ==================
@@ -68,8 +68,7 @@ orders_collection = db.orders
 
 app = Flask(__name__)
 
-# Biến lưu trạng thái admin đang up file
-admin_update_state = {}  # {admin_id: {"file_id": file_id, "type": "free" hoặc "paid"}}
+admin_update_state = {}
 
 # ================== HÀM HỖ TRỢ ==================
 def get_remaining_count(accounts_list):
@@ -85,13 +84,11 @@ def get_today_stats():
     today = date.today().isoformat()
     stats = []
     total_taken = 0
-    # Free
     for key, service in FREE_ACCOUNTS.items():
         taken = users_collection.count_documents({"service": key, "date": today})
         remaining = get_remaining_count(service["accounts"])
         stats.append(f"{service['emoji']} {service['name']}: {remaining} | <b>{taken} người lấy</b>")
         total_taken += taken
-    # Paid
     for key, service in PAID_ACCOUNTS.items():
         sold = orders_collection.count_documents({"service_key": key, "date": today, "status": "success"})
         remaining = get_remaining_count(service["accounts"])
@@ -140,8 +137,6 @@ def update_accounts_from_text(service_key, text_content, is_paid=False):
     for line in lines:
         if '|' in line:
             parts = line.split('|', 1)
-        elif ':' in line and '|' in line:
-            parts = [line.split('|')[0].strip(), line.split('|')[1].strip()]
         else:
             parts = line.split(None, 1) if ' ' in line else [line]
         if len(parts) >= 2:
@@ -177,7 +172,6 @@ def paid_menu():
         kb.add(types.InlineKeyboardButton(f"{s['emoji']} {s['name']} | {price}", callback_data=f"buy_{key}"))
     return kb
 
-# Admin menu
 def admin_type_menu():
     kb = types.InlineKeyboardMarkup(row_width=2)
     kb.add(
@@ -193,7 +187,7 @@ def admin_service_menu(is_paid=False):
         kb.add(types.InlineKeyboardButton(f"{s['emoji']} {s['name']}", callback_data=f"upsvc_{key}_{'paid' if is_paid else 'free'}"))
     return kb
 
-# ================== FLASK + WEBHOOK PAYOS ==================
+# ================== FLASK + WEBHOOK ==================
 @app.route('/')
 def health():
     return "Bot đang chạy khỏe mạnh! 🚀", 200
@@ -202,7 +196,7 @@ def health():
 def payos_webhook():
     try:
         data = request.get_json(force=True)
-        webhook_data = payOS.verifyPaymentWebhookData(data)  # SDK tự verify
+        webhook_data = payOS.verifyPaymentWebhookData(data)
         if webhook_data.code == "00":
             order_code = webhook_data.orderCode
             order = orders_collection.find_one({"order_code": order_code, "status": "pending"})
@@ -212,14 +206,12 @@ def payos_webhook():
                 if PAID_ACCOUNTS[service_key]["accounts"]:
                     account = random.choice(PAID_ACCOUNTS[service_key]["accounts"])
                     PAID_ACCOUNTS[service_key]["accounts"].remove(account)
-                    
                     text = (
                         f"🎉 <b>THANH TOÁN THÀNH CÔNG!</b>\n\n"
                         f"<b>Dịch vụ:</b> {PAID_ACCOUNTS[service_key]['name']}\n"
                         f"<b>Tài khoản riêng tư:</b>\n<code>{account}</code>\n\n"
                         f"❤️ Dùng thoải mái, không đổi pass nhé!\n"
-                        f"📹 <b>HƯỚNG DẪN CHATGPT PLUS</b>\n"
-                        f"https://youtu.be/u5GqqqJgfHQ\n"
+                        f"📹 <b>HƯỚNG DẪN</b>: https://youtu.be/u5GqqqJgfHQ\n"
                         f"https://yopmail.com/"
                     )
                     bot.send_message(user_id, text, parse_mode="HTML", disable_web_page_preview=True)
@@ -242,7 +234,6 @@ def start(msg):
     )
     bot.send_message(msg.chat.id, welcome, parse_mode="HTML", reply_markup=main_menu(), disable_web_page_preview=True)
 
-# Xử lý từ khóa gõ tay
 @bot.message_handler(func=lambda m: True)
 def keyword_handler(msg):
     text = msg.text.lower().strip()
@@ -259,7 +250,6 @@ def keyword_handler(msg):
                 delete_message_later(msg.chat.id, menu_msg.message_id)
             return
 
-# Callback
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
     if call.data == "menu_free":
@@ -288,7 +278,7 @@ def callback(call):
         if service_key == "chatgpt":
             text += (
                 "\n\n📹 <b>HƯỚNG DẪN SỬ DỤNG CHATGPT PLUS</b>\n"
-                "Xem video chi tiết (cập nhật 2025):\n"
+                "Xem video chi tiết:\n"
                 "https://youtu.be/u5GqqqJgfHQ\n"
                 "https://yopmail.com/"
             )
@@ -310,17 +300,19 @@ def callback(call):
             return
         
         order_code = int(time.time() * 1000)
-        item = ItemData(name=service["name"], quantity=1, price=service["price"])
-        payment_data = PaymentData(
+        items = [ItemData(name=service["name"], quantity=1, price=service["price"])]
+        
+        payment_data = CreatePaymentLinkRequest(
             orderCode=order_code,
             amount=service["price"],
             description=f"Mua {service['name']} - User {user_id}",
-            items=[item],
-            cancelUrl=WEBHOOK_URL_BASE,
-            returnUrl=WEBHOOK_URL_BASE
+            items=items,
+            returnUrl=WEBHOOK_URL_BASE,
+            cancelUrl=WEBHOOK_URL_BASE
         )
+        
         try:
-            result = payOS.createPaymentLink(payment_data)
+            result = payOS.payment_requests.create(payment_data=payment_data)
             checkout_url = result.checkoutUrl
             
             orders_collection.insert_one({
@@ -338,13 +330,13 @@ def callback(call):
             bot.send_message(user_id,
                              f"💎 <b>MUA {service['name']}</b>\n\n"
                              f"Giá: <b>{service['price']:,}đ</b>\n\n"
-                             f"Thanh toán xong → tài khoản riêng tư sẽ được gửi tự động trong vài giây!\n"
+                             f"Thanh toán xong → tài khoản riêng tư gửi tự động!\n"
                              f"⏰ Link hết hạn sau 15 phút.",
                              parse_mode="HTML", reply_markup=kb)
             bot.answer_callback_query(call.id, "🔗 Link thanh toán đã gửi vào chat riêng!")
         except Exception as e:
             bot.answer_callback_query(call.id, "❌ Lỗi tạo link thanh toán!", show_alert=True)
-            print(e)
+            print("PayOS create link error:", e)
 
 # ================== ADMIN UP FILE ==================
 @bot.message_handler(content_types=['document'])
@@ -404,6 +396,6 @@ def run_flask():
     app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 if __name__ == "__main__":
-    print("🤖 Bot Share Free + Premium (Đã sửa PayOS SDK mới nhất) đang khởi động...")
+    print("🤖 Bot Share Free + Premium (PayOS SDK chính thức mới nhất) đang khởi động...")
     threading.Thread(target=run_flask, daemon=True).start()
     bot.infinity_polling(none_stop=True)
