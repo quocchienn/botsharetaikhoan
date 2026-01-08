@@ -6,9 +6,8 @@ import random
 import threading
 import time
 import os
-from flask import Flask, request, jsonify
+from flask import Flask
 from telebot.apihelper import ApiTelegramException
-from payos import PayOS, ItemData, PaymentData
 
 # ================== CẤU HÌNH ==================
 
@@ -16,80 +15,74 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = os.getenv("DB_NAME", "free_share_bot")
 
-# Cấu hình PayOS
-PAYOS_CLIENT_ID = os.getenv("PAYOS_CLIENT_ID")
-PAYOS_API_KEY = os.getenv("PAYOS_API_KEY")
-PAYOS_CHECKSUM_KEY = os.getenv("PAYOS_CHECKSUM_KEY")
-DOMAIN = os.getenv("DOMAIN")
-
-payos = PayOS(PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY)
-
 if not BOT_TOKEN or not MONGO_URI:
     raise ValueError("Thiết lập BOT_TOKEN và MONGO_URI trong Environment Variables!")
 
-ADMIN_ID = 5589888565 
+ADMIN_ID = 5589888565  # ID admin duy nhất của bạn
 
-# ================== DỮ LIỆU DỊCH VỤ ==================
+# ================== DANH SÁCH TÀI KHOẢN FREE (BẮT ĐẦU RỖNG - SẼ ĐƯỢC CẬP NHẬT BẰNG FILE TXT) ==================
 
 FREE_ACCOUNTS = {
-    "capcut": {"name": "CapCut Pro", "emoji": "🎬", "keywords": ["capcut", "cap", "cut"], "accounts": []},
-    "chatgpt": {"name": "ChatGPT Plus", "emoji": "🤖", "keywords": ["chatgpt", "gpt", "ai"], "accounts": []},
-    "canva": {"name": "Canva Pro Teams", "emoji": "🎨", "keywords": ["canva", "thietke"], "accounts": []},
-    "netflix": {"name": "Netflix Shared", "emoji": "📺", "keywords": ["netflix", "nf"], "accounts": []},
-    "picsart": {"name": "Picsart Gold", "emoji": "🖼️", "keywords": ["picsart", "pic"], "accounts": []},
-    "hma": {"name": "HMA VPN Pro", "emoji": "🔒", "keywords": ["hma", "vpn"], "accounts": []},
-    "wink": {"name": "WINK VPN Pro", "emoji": "📸", "keywords": ["wink"], "accounts": []},
+    "capcut": {
+        "name": "CapCut Pro",
+        "emoji": "🎬",
+        "keywords": ["capcut", "cap", "cut", "cap cut"],
+        "accounts": []
+    },
+    "chatgpt": {
+        "name": "ChatGPT Plus",
+        "emoji": "🤖",
+        "keywords": ["chatgpt", "gpt", "chat gpt", "ai"],
+        "accounts": []
+    },
+    "canva": {
+        "name": "Canva Pro Teams Free",
+        "emoji": "🎨",
+        "keywords": ["canva", "design", "thietke", "can va"],
+        "accounts": []
+    },
+    "netflix": {
+        "name": "Netflix Shared",
+        "emoji": "📺",
+        "keywords": ["netflix", "nf", "phim", "net flix"],
+        "accounts": []
+    },
+    "picsart": {
+        "name": "Picsart Gold",
+        "emoji": "🖼️",
+        "keywords": ["picsart", "pic", "pics art", "edit anh", "chinh anh"],
+        "accounts": []
+    },
+    "hma": {
+        "name": "HMA VPN Pro",
+        "emoji": "🔒",
+        "keywords": ["hma", "vpn", "hide my ass", "hidemyass", "proxy"],
+        "accounts": []
+    },
+    "wink": {
+        "name": "WINK VPN Pro",
+        "emoji": "📸",
+        "keywords": ["wink"],
+        "accounts": []
+    },
 }
+# Biến lưu trạng thái admin đang cập nhật tài khoản
+admin_update_state = {}  # {admin_id: {"file_id": file_id}}
 
-# Gói Premium bán phí
-PREMIUM_PACKS = {
-    "pack_vip_1": {"name": "Gói VIP 1 Tháng (Tất cả DV)", "price": 50000, "days": 30},
-    "pack_vip_3": {"name": "Gói VIP 3 Tháng (Tất cả DV)", "price": 120000, "days": 90}
-}
-
-admin_update_state = {}
-
-# ================== KHỞI TẠO DB & BOT ==================
+# ================== KHỞI TẠO ==================
 
 bot = telebot.TeleBot(BOT_TOKEN)
 mongo = MongoClient(MONGO_URI)
 db = mongo[DB_NAME]
 users_collection = db.users
-orders_collection = db.orders # Collection mới lưu đơn hàng
 
-# ================== FLASK SERVER & WEBHOOK PAYOS ==================
+# ================== FLASK SERVER ==================
 
 app = Flask(__name__)
 
 @app.route('/')
 def health_check():
-    return "🤖 Bot Share & PayOS đang chạy! 🚀", 200
-
-@app.route('/payos-webhook', methods=['POST'])
-def payos_webhook():
-    data = request.json
-    try:
-        # Xác thực webhook từ PayOS
-        webhook_data = payos.verifyPaymentData(data)
-        order_code = webhook_data['orderCode']
-        status = webhook_data['status']
-
-        if status == "PAID":
-            # Tìm đơn hàng trong DB
-            order = orders_collection.find_one({"order_code": order_code, "status": "PENDING"})
-            if order:
-                user_id = order['user_id']
-                # Cập nhật trạng thái đơn hàng
-                orders_collection.update_one({"order_code": order_code}, {"$set": {"status": "COMPLETED"}})
-                
-                # Gửi thông báo cho người dùng
-                bot.send_message(user_id, f"✅ **THANH TOÁN THÀNH CÔNG!**\nCảm ơn bạn đã mua {order['pack_name']}.\nBạn đã được nâng cấp quyền ưu tiên!")
-                # Bạn có thể thêm logic cộng ngày VIP vào DB users ở đây
-                
-        return jsonify({"success": True}), 200
-    except Exception as e:
-        print(f"Webhook Error: {e}")
-        return jsonify({"success": False}), 400
+    return "🤖 Bot Share Tài Khoản Free đang chạy khỏe mạnh! 🚀", 200
 
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
@@ -99,8 +92,13 @@ def run_flask():
 
 def can_user_take_today(user_id, service_key):
     today = date.today().isoformat()
-    record = users_collection.find_one({"user_id": user_id, "service": service_key, "date": today})
-    if record is None: return True
+    record = users_collection.find_one({
+        "user_id": user_id,
+        "service": service_key,
+        "date": today
+    })
+    if record is None:
+        return True
     return record.get("count", 0) < 10
 
 def mark_user_taken(user_id, service_key):
@@ -108,76 +106,127 @@ def mark_user_taken(user_id, service_key):
     result = users_collection.find_one_and_update(
         {"user_id": user_id, "service": service_key, "date": today},
         {"$inc": {"count": 1}, "$setOnInsert": {"taken_at": datetime.now()}},
-        upsert=True, return_document=True
+        upsert=True,
+        return_document=True
     )
     return result.get("count", 1)
 
+def get_one_random_account(service_key):
+    accounts = FREE_ACCOUNTS[service_key]["accounts"]
+    if not accounts:
+        return None
+    return random.choice(accounts)
+
 def get_remaining_count(service_key):
     count = len(FREE_ACCOUNTS.get(service_key, {}).get("accounts", []))
-    if count == 0: return "🔴 Hết hàng"
-    return f"🟢 Còn: {count}"
+    if count == 0:
+        return "🔴 Hết hàng"
+    elif count <= 5:
+        return f"🟡 Còn: {count} (Sắp hết)"
+    else:
+        return f"🟢 Còn: {count}"
 
-def inline_main_menu():
+def inline_service_menu():
     kb = types.InlineKeyboardMarkup(row_width=1)
     for key, service in FREE_ACCOUNTS.items():
         remaining = get_remaining_count(key)
-        if "Hết hàng" not in remaining:
-            kb.add(types.InlineKeyboardButton(text=f"{service['emoji']} {service['name']} | {remaining}", callback_data=f"get_{key}"))
-    
-    # Nút Mua hàng
-    kb.add(types.InlineKeyboardButton(text="💎 MUA TÀI KHOẢN PREMIUM (TỰ ĐỘNG)", callback_data="buy_menu"))
+        if "Hết hàng" in remaining:
+            continue
+        kb.add(types.InlineKeyboardButton(
+            text=f"{service['emoji']} {service['name']} | {remaining}",
+            callback_data=f"get_{key}"
+        ))
     return kb
 
-# ================== XỬ LÝ THANH TOÁN ==================
+def get_today_stats():
+    today = date.today().isoformat()
+    stats = []
+    total_taken = 0
+    for key, service in FREE_ACCOUNTS.items():
+        taken = users_collection.count_documents({"service": key, "date": today})
+        remaining = get_remaining_count(key)
+        stats.append(f"{service['emoji']} {service['name']}: {remaining} | <b>{taken} người lấy</b>")
+        total_taken += taken
+    stats_text = "\n".join(stats)
+    return f"📊 <b>THỐNG KÊ & TỒN KHO HÔM NAY</b>\n{stats_text}\n\n💥 <b>Tổng lượt lấy: {total_taken}</b>"
 
-@bot.callback_query_handler(func=lambda call: call.data == "buy_menu")
-def handle_buy_menu(call):
-    kb = types.InlineKeyboardMarkup(row_width=1)
-    for key, pack in PREMIUM_PACKS.items():
-        kb.add(types.InlineKeyboardButton(text=f"🛒 {pack['name']} - {pack['price']:,}đ", callback_data=f"order_{key}"))
-    kb.add(types.InlineKeyboardButton(text="🔙 Quay lại", callback_data="back_to_main"))
-    bot.edit_message_text("💎 **NÂNG CẤP PREMIUM**\n\nQuyền lợi: Lấy tài khoản không giới hạn, hỗ trợ riêng, tốc độ cao.", 
-                          call.message.chat.id, call.message.message_id, reply_markup=kb, parse_mode="HTML")
+def delete_message_later(chat_id, message_id, delay=15):
+    def delete():
+        time.sleep(delay)
+        try:
+            bot.delete_message(chat_id, message_id)
+        except:
+            pass
+    threading.Thread(target=delete, daemon=True).start()
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("order_"))
-def handle_create_order(call):
-    pack_key = call.data.split("_")[1]
-    pack = PREMIUM_PACKS[pack_key]
-    user_id = call.from_user.id
-    order_code = int(time.time()) # Mã đơn hàng duy nhất
+# Hàm cập nhật tài khoản từ nội dung file txt
+def update_accounts_from_text(service_key, text_content):
+    lines = [line.strip() for line in text_content.splitlines() if line.strip()]
+    formatted_accounts = []
+    for line in lines:
+        # Hỗ trợ nhiều định dạng: email|pass, email pass, Email: ... | Pass: ...
+        if '|' in line:
+            parts = line.split('|', 1)
+        elif ':' in line and '|' in line:
+            parts = [line.split('|')[0].strip(), line.split('|')[1].strip()]
+        else:
+            parts = line.split(None, 1) if ' ' in line else [line]
+        if len(parts) >= 2:
+            email = parts[0].replace("Email:", "").strip()
+            password = parts[1].replace("Pass:", "").strip()
+            formatted = f"Email: {email} | Pass: {password}"
+        else:
+            formatted = line  # cho invite link canva
+        formatted_accounts.append(formatted)
+    FREE_ACCOUNTS[service_key]["accounts"] = formatted_accounts
+    return len(formatted_accounts)
 
+# Menu chọn dịch vụ để cập nhật
+def admin_service_menu():
+    kb = types.InlineKeyboardMarkup(row_width=2)
+    for key, service in FREE_ACCOUNTS.items():
+        kb.add(types.InlineKeyboardButton(
+            text=f"{service['emoji']} {service['name']}",
+            callback_data=f"update_{key}"
+        ))
+    return kb
+
+# ================== XỬ LÝ FILE TXT TỪ ADMIN ==================
+
+@bot.message_handler(content_types=['document'])
+def handle_document(msg):
+    if msg.from_user.id != ADMIN_ID:
+        return
+    if not msg.document.file_name.lower().endswith('.txt'):
+        bot.reply_to(msg, "❌ Chỉ chấp nhận file .txt thôi admin ơi!")
+        return
+    bot.reply_to(msg, "📄 Đã nhận file tài khoản!\n👇 Chọn dịch vụ muốn cập nhật:", reply_markup=admin_service_menu())
+    admin_update_state[msg.from_user.id] = {"file_id": msg.document.file_id}
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("update_"))
+def handle_update_service(call):
+    if call.from_user.id != ADMIN_ID:
+        return
+    service_key = call.data.split("_")[1]
+    if call.from_user.id not in admin_update_state:
+        bot.answer_callback_query(call.id, "❌ Không tìm thấy file!", show_alert=True)
+        return
+    file_id = admin_update_state[call.from_user.id]["file_id"]
     try:
-        # Tạo link thanh toán PayOS
-        payment_data = PaymentData(
-            orderCode=order_code,
-            amount=pack['price'],
-            description=f"Thanh toan {pack_key}",
-            items=[ItemData(name=pack['name'], quantity=1, price=pack['price'])],
-            returnUrl=f"{DOMAIN}/",
-            cancelUrl=f"{DOMAIN}/"
-        )
-        pay_link_res = payos.createPaymentLink(payment_data)
-        
-        # Lưu đơn hàng vào DB chờ thanh toán
-        orders_collection.insert_one({
-            "user_id": user_id,
-            "order_code": order_code,
-            "pack_name": pack['name'],
-            "amount": pack['price'],
-            "status": "PENDING",
-            "created_at": datetime.now()
-        })
-
-        kb = types.InlineKeyboardMarkup()
-        kb.add(types.InlineKeyboardButton(text="💳 THANH TOÁN NGAY (VIETQR)", url=pay_link_res.checkoutUrl))
-        
-        bot.send_message(user_id, f"✅ **ĐƠN HÀNG ĐÃ TẠO!**\n\n📦 Gói: {pack['name']}\n💰 Số tiền: {pack['price']:,}đ\n\nBấm nút bên dưới để thanh toán. Hệ thống tự động duyệt sau 1-3 phút.", 
-                         reply_markup=kb, parse_mode="Markdown")
-        bot.answer_callback_query(call.id)
+        file_path = bot.get_file(file_id).file_path
+        downloaded_file = bot.download_file(file_path)
+        content = downloaded_file.decode('utf-8')
+        count = update_accounts_from_text(service_key, content)
+        bot.answer_callback_query(call.id, f"✅ Cập nhật thành công {count} tài khoản!", show_alert=True)
+        bot.send_message(call.from_user.id,
+                         f"🚀 Đã cập nhật <b>{count}</b> tài khoản cho <b>{FREE_ACCOUNTS[service_key]['name']}</b>\n"
+                         f"Tồn kho hiện tại: {get_remaining_count(service_key)}", parse_mode="HTML")
+        del admin_update_state[call.from_user.id]
     except Exception as e:
-        bot.answer_callback_query(call.id, "❌ Lỗi hệ thống khi tạo đơn!", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ Lỗi khi xử lý file!", show_alert=True)
+        bot.send_message(call.from_user.id, f"Lỗi: {str(e)}")
 
-# ================== CÁC HANDLER CŨ (START, KEYWORDS, ETC) ==================
+# ================== /start ==================
 
 @bot.message_handler(commands=["start"])
 def start(msg):
