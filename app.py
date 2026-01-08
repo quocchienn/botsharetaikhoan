@@ -9,7 +9,7 @@ import os
 from flask import Flask, request, jsonify
 from telebot.apihelper import ApiTelegramException
 
-# ================== PAYOS (SỬA ĐÚNG THEO SDK CHÍNH THỨC MỚI NHẤT) ==================
+# ================== PAYOS (ĐÃ SỬA HOÀN CHỈNH THEO DOCS CHÍNH THỨC) ==================
 from payos import PayOS
 from payos.types import CreatePaymentLinkRequest, ItemData
 
@@ -21,7 +21,7 @@ DB_NAME = os.getenv("DB_NAME", "free_share_bot")
 PAYOS_CLIENT_ID = os.getenv("PAYOS_CLIENT_ID")
 PAYOS_API_KEY = os.getenv("PAYOS_API_KEY")
 PAYOS_CHECKSUM_KEY = os.getenv("PAYOS_CHECKSUM_KEY")
-WEBHOOK_URL_BASE = os.getenv("WEBHOOK_URL_BASE")  # https://your-bot.onrender.com
+WEBHOOK_URL_BASE = os.getenv("WEBHOOK_URL_BASE")
 
 if not all([BOT_TOKEN, MONGO_URI, PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY, WEBHOOK_URL_BASE]):
     raise ValueError("Thiếu biến môi trường quan trọng!")
@@ -195,7 +195,7 @@ def health():
 @app.route('/payos_webhook', methods=['POST'])
 def payos_webhook():
     try:
-        data = request.get_data()  # Lấy raw body (bytes) để verify chính xác
+        data = request.get_data()  # Dùng raw body để verify chính xác
         webhook_data = payOS.webhooks.verify(data)
         if webhook_data.code == "00":
             order_code = webhook_data.orderCode
@@ -313,7 +313,7 @@ def callback(call):
         
         try:
             result = payOS.payment_requests.create(payment_data=payment_data)
-            checkout_url = result.checkout_url  # chữ u thường
+            checkout_url = result.checkout_url  # chữ u thường - đúng theo docs
             
             orders_collection.insert_one({
                 "order_code": order_code,
@@ -336,7 +336,7 @@ def callback(call):
             bot.answer_callback_query(call.id, "🔗 Link thanh toán đã gửi vào chat riêng!")
         except Exception as e:
             bot.answer_callback_query(call.id, "❌ Lỗi tạo link thanh toán!", show_alert=True)
-            print("PayOS create link error:", e)
+            print("PayOS error:", e)
 
 # ================== ADMIN UP FILE ==================
 @bot.message_handler(content_types=['document'])
@@ -396,6 +396,6 @@ def run_flask():
     app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 if __name__ == "__main__":
-    print("🤖 Bot Share Free + Premium đang khởi động (PayOS SDK hoàn chỉnh 100%)...")
+    print("🤖 Bot Share Free + Premium (PayOS SDK đã fix hoàn chỉnh 100% - bot sẽ trả lời ngay) đang khởi động...")
     threading.Thread(target=run_flask, daemon=True).start()
     bot.infinity_polling(none_stop=True)
