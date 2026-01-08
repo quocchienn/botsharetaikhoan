@@ -9,12 +9,8 @@ import os
 from flask import Flask, request, jsonify
 from telebot.apihelper import ApiTelegramException
 
-# ================== PAYOS ==================
-try:
-    from payos import PayOS
-    from payos.types import PaymentData, ItemData
-except ImportError:
-    raise ImportError("Chưa cài payos: pip install payos")
+# ================== PAYOS (ĐÃ SỬA ĐÚNG THEO SDK MỚI NHẤT) ==================
+from payos import PayOS, PaymentData, ItemData  # Import trực tiếp từ payos
 
 # ================== CẤU HÌNH ==================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -24,7 +20,7 @@ DB_NAME = os.getenv("DB_NAME", "free_share_bot")
 PAYOS_CLIENT_ID = os.getenv("PAYOS_CLIENT_ID")
 PAYOS_API_KEY = os.getenv("PAYOS_API_KEY")
 PAYOS_CHECKSUM_KEY = os.getenv("PAYOS_CHECKSUM_KEY")
-WEBHOOK_URL_BASE = os.getenv("WEBHOOK_URL_BASE")  # https://your-bot.onrender.com
+WEBHOOK_URL_BASE = os.getenv("WEBHOOK_URL_BASE")  # Ví dụ: https://your-bot.onrender.com
 
 if not all([BOT_TOKEN, MONGO_URI, PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY, WEBHOOK_URL_BASE]):
     raise ValueError("Thiếu biến môi trường quan trọng!")
@@ -49,7 +45,7 @@ PAID_ACCOUNTS = {
     "chatgpt_premium": {
         "name": "ChatGPT Plus Riêng Tư (Premium)",
         "emoji": "🤖",
-        "price": 150000,  # VND
+        "price": 150000,
         "keywords": ["chatgpt premium", "gpt premium", "chatgpt mua", "gpt mua"],
         "accounts": []
     },
@@ -95,7 +91,7 @@ def get_today_stats():
         remaining = get_remaining_count(service["accounts"])
         stats.append(f"{service['emoji']} {service['name']}: {remaining} | <b>{taken} người lấy</b>")
         total_taken += taken
-    # Paid (thành công)
+    # Paid
     for key, service in PAID_ACCOUNTS.items():
         sold = orders_collection.count_documents({"service_key": key, "date": today, "status": "success"})
         remaining = get_remaining_count(service["accounts"])
@@ -181,7 +177,7 @@ def paid_menu():
         kb.add(types.InlineKeyboardButton(f"{s['emoji']} {s['name']} | {price}", callback_data=f"buy_{key}"))
     return kb
 
-# Menu chọn loại (Free/Paid) khi admin up file
+# Admin menu
 def admin_type_menu():
     kb = types.InlineKeyboardMarkup(row_width=2)
     kb.add(
@@ -190,7 +186,6 @@ def admin_type_menu():
     )
     return kb
 
-# Menu chọn dịch vụ sau khi chọn loại
 def admin_service_menu(is_paid=False):
     kb = types.InlineKeyboardMarkup(row_width=2)
     target = PAID_ACCOUNTS if is_paid else FREE_ACCOUNTS
@@ -207,27 +202,28 @@ def health():
 def payos_webhook():
     try:
         data = request.get_json(force=True)
-        webhook_data = payOS.verifyPaymentWebhookData(data)
+        webhook_data = payOS.verifyPaymentWebhookData(data)  # SDK tự verify
         if webhook_data.code == "00":
             order_code = webhook_data.orderCode
             order = orders_collection.find_one({"order_code": order_code, "status": "pending"})
             if order:
                 user_id = order["user_id"]
                 service_key = order["service_key"]
-                account = random.choice(PAID_ACCOUNTS[service_key]["accounts"])
-                PAID_ACCOUNTS[service_key]["accounts"].remove(account)
-                
-                text = (
-                    f"🎉 <b>THANH TOÁN THÀNH CÔNG!</b>\n\n"
-                    f"<b>Dịch vụ:</b> {PAID_ACCOUNTS[service_key]['name']}\n"
-                    f"<b>Tài khoản riêng tư:</b>\n<code>{account}</code>\n\n"
-                    f"❤️ Dùng thoải mái, không đổi pass nhé!\n"
-                    f"📹 Xem hướng dẫn sử dụng ChatGPT Plus hiệu quả:\n"
-                    f"https://youtu.be/u5GqqqJgfHQ\n"
-                    f"https://yopmail.com/"
-                )
-                bot.send_message(user_id, text, parse_mode="HTML", disable_web_page_preview=True)
-                orders_collection.update_one({"order_code": order_code}, {"$set": {"status": "success"}})
+                if PAID_ACCOUNTS[service_key]["accounts"]:
+                    account = random.choice(PAID_ACCOUNTS[service_key]["accounts"])
+                    PAID_ACCOUNTS[service_key]["accounts"].remove(account)
+                    
+                    text = (
+                        f"🎉 <b>THANH TOÁN THÀNH CÔNG!</b>\n\n"
+                        f"<b>Dịch vụ:</b> {PAID_ACCOUNTS[service_key]['name']}\n"
+                        f"<b>Tài khoản riêng tư:</b>\n<code>{account}</code>\n\n"
+                        f"❤️ Dùng thoải mái, không đổi pass nhé!\n"
+                        f"📹 <b>HƯỚNG DẪN CHATGPT PLUS</b>\n"
+                        f"https://youtu.be/u5GqqqJgfHQ\n"
+                        f"https://yopmail.com/"
+                    )
+                    bot.send_message(user_id, text, parse_mode="HTML", disable_web_page_preview=True)
+                    orders_collection.update_one({"order_code": order_code}, {"$set": {"status": "success"}})
         return jsonify({"success": True})
     except Exception as e:
         print("Webhook error:", e)
@@ -250,14 +246,12 @@ def start(msg):
 @bot.message_handler(func=lambda m: True)
 def keyword_handler(msg):
     text = msg.text.lower().strip()
-    # Tìm free
     for key, s in FREE_ACCOUNTS.items():
         if any(kw in text for kw in s["keywords"]):
             menu_msg = bot.send_message(msg.chat.id, f"🔥 <b>{s['name']}</b>\n\n{get_today_stats()}", parse_mode="HTML", reply_markup=free_menu())
             if msg.chat.type in ["group", "supergroup"]:
                 delete_message_later(msg.chat.id, menu_msg.message_id)
             return
-    # Tìm paid
     for key, s in PAID_ACCOUNTS.items():
         if any(kw in text for kw in s["keywords"]):
             menu_msg = bot.send_message(msg.chat.id, f"💎 <b>MUA {s['name']}</b>\n\n{get_today_stats()}", parse_mode="HTML", reply_markup=paid_menu())
@@ -265,7 +259,7 @@ def keyword_handler(msg):
                 delete_message_later(msg.chat.id, menu_msg.message_id)
             return
 
-# Callback chính
+# Callback
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
     if call.data == "menu_free":
@@ -322,31 +316,35 @@ def callback(call):
             amount=service["price"],
             description=f"Mua {service['name']} - User {user_id}",
             items=[item],
-            returnUrl=WEBHOOK_URL_BASE,
-            cancelUrl=WEBHOOK_URL_BASE
+            cancelUrl=WEBHOOK_URL_BASE,
+            returnUrl=WEBHOOK_URL_BASE
         )
-        result = payOS.createPaymentLink(payment_data)
-        checkout_url = result.checkoutUrl
-        
-        orders_collection.insert_one({
-            "order_code": order_code,
-            "user_id": user_id,
-            "service_key": service_key,
-            "status": "pending",
-            "date": date.today().isoformat(),
-            "created_at": datetime.now()
-        })
-        
-        kb = types.InlineKeyboardMarkup()
-        kb.add(types.InlineKeyboardButton("💳 Thanh toán ngay (PayOS QR)", url=checkout_url))
-        
-        bot.send_message(user_id,
-                         f"💎 <b>MUA {service['name']}</b>\n\n"
-                         f"Giá: <b>{service['price']:,}đ</b>\n\n"
-                         f"Thanh toán xong → tài khoản riêng tư sẽ được gửi tự động trong vài giây!\n"
-                         f"⏰ Link hết hạn sau 15 phút.",
-                         parse_mode="HTML", reply_markup=kb)
-        bot.answer_callback_query(call.id, "🔗 Link thanh toán đã gửi vào chat riêng!")
+        try:
+            result = payOS.createPaymentLink(payment_data)
+            checkout_url = result.checkoutUrl
+            
+            orders_collection.insert_one({
+                "order_code": order_code,
+                "user_id": user_id,
+                "service_key": service_key,
+                "status": "pending",
+                "date": date.today().isoformat(),
+                "created_at": datetime.now()
+            })
+            
+            kb = types.InlineKeyboardMarkup()
+            kb.add(types.InlineKeyboardButton("💳 Thanh toán ngay (PayOS QR)", url=checkout_url))
+            
+            bot.send_message(user_id,
+                             f"💎 <b>MUA {service['name']}</b>\n\n"
+                             f"Giá: <b>{service['price']:,}đ</b>\n\n"
+                             f"Thanh toán xong → tài khoản riêng tư sẽ được gửi tự động trong vài giây!\n"
+                             f"⏰ Link hết hạn sau 15 phút.",
+                             parse_mode="HTML", reply_markup=kb)
+            bot.answer_callback_query(call.id, "🔗 Link thanh toán đã gửi vào chat riêng!")
+        except Exception as e:
+            bot.answer_callback_query(call.id, "❌ Lỗi tạo link thanh toán!", show_alert=True)
+            print(e)
 
 # ================== ADMIN UP FILE ==================
 @bot.message_handler(content_types=['document'])
@@ -363,8 +361,9 @@ def handle_document(msg):
 def choose_type(call):
     if call.from_user.id != ADMIN_ID:
         return
-    up_type = call.data.split("_")[1]  # free hoặc paid
-    bot.edit_message_text("👉 Chọn dịch vụ muốn cập nhật:", call.message.chat.id, call.message.message_id, reply_markup=admin_service_menu(up_type == "paid"))
+    up_type = call.data.split("_")[1]
+    is_paid = (up_type == "paid")
+    bot.edit_message_text("👉 Chọn dịch vụ muốn cập nhật:", call.message.chat.id, call.message.message_id, reply_markup=admin_service_menu(is_paid))
     admin_update_state[call.from_user.id]["type"] = up_type
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("upsvc_"))
@@ -373,7 +372,7 @@ def update_service(call):
         return
     parts = call.data.split("_")
     service_key = parts[1]
-    up_type = parts[2]  # free hoặc paid
+    up_type = parts[2]
     is_paid = (up_type == "paid")
     
     state = admin_update_state.get(call.from_user.id)
@@ -405,6 +404,6 @@ def run_flask():
     app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 if __name__ == "__main__":
-    print("🤖 Bot Share Free + Premium (Full tính năng) đang khởi động...")
+    print("🤖 Bot Share Free + Premium (Đã sửa PayOS SDK mới nhất) đang khởi động...")
     threading.Thread(target=run_flask, daemon=True).start()
     bot.infinity_polling(none_stop=True)
