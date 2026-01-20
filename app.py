@@ -72,8 +72,6 @@ FREE_ACCOUNTS = {
         "accounts": []
     },
 }
-    },
-}
 # Biến lưu trạng thái admin đang cập nhật tài khoản
 admin_update_state = {}  # {admin_id: {"file_id": file_id}}
 
