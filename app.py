@@ -60,10 +60,18 @@ FREE_ACCOUNTS = {
         "accounts": []
     },
     "wink": {
-        "name": "WINK VPN Pro",
+        "name": "WINK Pro",
         "emoji": "📸",
         "keywords": ["wink"],
         "accounts": []
+            },
+    "gemini": {
+        "name": "Gemini ULTRA",
+        "emoji": "📸",
+        "keywords": ["gemini"],
+        "accounts": []
+    },
+}
     },
 }
 # Biến lưu trạng thái admin đang cập nhật tài khoản
@@ -239,7 +247,7 @@ def start(msg):
         "❤️ Dùng hợp lý, không đổi pass nhé!\n\n"
         f"{get_today_stats()}\n\n"
         "👇 Chọn dịch vụ còn hàng để nhận ngay!\n"
-        "<i>Gõ capcut, chatgpt, canva, netflix, picsart, hma để mở nhanh</i>\n\n"
+        "<i>Gõ capcut, chatgpt, canva, netflix, picsart, hma, wink, gemini để mở nhanh</i>\n\n"
         "📹 <b>HƯỚNG DẪN SỬ DỤNG CHATGPT PLUS</b>\n"
         "Xem video hướng dẫn chi tiết cách dùng ChatGPT hiệu quả (dành cho người mới):\n"
         "https://youtu.be/u5GqqqJgfHQ\n"
