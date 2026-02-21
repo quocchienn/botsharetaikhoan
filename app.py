@@ -74,7 +74,7 @@ FREE_ACCOUNTS = {
     "Grok": {
         "name": "Grok Super",
         "emoji": "📸",
-        "keywords": ["Grok Super"],
+        "keywords": ["Grok"],
         "accounts": []
     },
 }
