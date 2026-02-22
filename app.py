@@ -71,10 +71,10 @@ FREE_ACCOUNTS = {
         "keywords": ["gemini"],
         "accounts": []
           },
-    "Grok": {
+    "grok": {
         "name": "Grok Super",
         "emoji": "📸",
-        "keywords": ["Grok"],
+        "keywords": ["grok"],
         "accounts": []
     },
 }
